@@ -862,7 +862,7 @@ export function PianoRoll() {
     if (hit) {
       const v = viewRef.current;
       const noteEndX = beatToX(hit.start + hit.duration);
-      const onHandle = Math.abs(x - noteEndX) <= RESIZE_HANDLE_PX && !activeTrack.isDrum;
+      const onHandle = Math.abs(x - noteEndX) <= RESIZE_HANDLE_PX;
 
       let ids = store.selectedNoteIds;
       if (e.ctrlKey || e.metaKey) {
@@ -956,7 +956,7 @@ export function PianoRoll() {
       // Hover cursor feedback for the resize handle.
       const hit = noteAt(x, y);
       const el = e.currentTarget as HTMLElement;
-      if (hit && !activeTrack?.isDrum) {
+      if (hit) {
         const endX = beatToX(hit.start + hit.duration);
         el.style.cursor = Math.abs(x - endX) <= RESIZE_HANDLE_PX ? 'ew-resize' : 'grab';
       } else {

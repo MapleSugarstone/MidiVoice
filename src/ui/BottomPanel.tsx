@@ -10,6 +10,26 @@ import type { DetectorEngine, InputMode } from '../model/types';
 import { detailToSettings, settingsToDetail } from '../model/types';
 import type { useRecording } from './useRecording';
 import { NumberField } from './TopBar';
+import { Dropdown } from './Dropdown';
+import { version } from '../../package.json';
+
+const SOURCE_OPTIONS = [
+  { value: 'melody', label: 'Sing: melody / harmony' },
+  { value: 'bass', label: 'Sing: bass line' },
+  { value: 'drums', label: 'Beatbox: drums' },
+  { value: 'midi', label: 'MIDI keyboard' },
+];
+
+const COUNT_IN_OPTIONS = [
+  { value: '0', label: 'None' },
+  { value: '1', label: '1 bar' },
+  { value: '2', label: '2 bars' },
+];
+
+const ENGINE_OPTIONS = [
+  { value: 'neural', label: 'Neural (recommended)' },
+  { value: 'classic', label: 'Classic' },
+];
 
 type Tab = 'record' | 'timing' | 'detect';
 
@@ -76,6 +96,11 @@ export function BottomPanel({ rec }: Props) {
           {tab === 'record' && <RecordTab rec={rec} />}
           {tab === 'timing' && <TimingTab rec={rec} />}
           {tab === 'detect' && <DetectTab />}
+          <p className="credits">
+            Note detection: Basic Pitch by Spotify (Apache 2.0). Audio: Tone.js. MIDI: @tonejs/midi
+            and midi-file. Built with React, zustand, and fflate (MIT). All other rights reserved.
+            <br />© {new Date().getFullYear()} · MidiVoice v{version}
+          </p>
         </ScrollArea>
       )}
     </section>
@@ -124,10 +149,11 @@ function RecordTab({ rec }: Props) {
         <div className="row wrap">
           <label className="field">
             <span>Source</span>
-            <select
+            <Dropdown
+              ariaLabel="Recording source"
               value={sourceValue}
-              onChange={(e) => {
-                const v = e.target.value;
+              options={SOURCE_OPTIONS}
+              onChange={(v) => {
                 if (v === 'midi') {
                   store().setSetting('recordSource', 'midi');
                   void midiInput.enable().then(() => setMidiDevices([...midiInput.devices]));
@@ -137,24 +163,17 @@ function RecordTab({ rec }: Props) {
                   store().setTranscribeSetting('mode', v as InputMode);
                 }
               }}
-            >
-              <option value="melody">Sing: melody / harmony</option>
-              <option value="bass">Sing: bass line</option>
-              <option value="drums">Beatbox: drums</option>
-              <option value="midi">MIDI keyboard</option>
-            </select>
+            />
           </label>
 
           <label className="field">
             <span>Count-in</span>
-            <select
-              value={countInBars}
-              onChange={(e) => store().setSetting('countInBars', Number(e.target.value))}
-            >
-              <option value={0}>None</option>
-              <option value={1}>1 bar</option>
-              <option value={2}>2 bars</option>
-            </select>
+            <Dropdown
+              ariaLabel="Count-in bars"
+              value={String(countInBars)}
+              options={COUNT_IN_OPTIONS}
+              onChange={(v) => store().setSetting('countInBars', Number(v))}
+            />
           </label>
 
           <button
@@ -233,19 +252,17 @@ function RecordTab({ rec }: Props) {
         {devices.length > 0 && (
           <label className="field">
             <span>Device</span>
-            <select
+            <Dropdown
+              ariaLabel="Microphone device"
               value={micOptions.deviceId ?? ''}
-              onChange={(e) => {
-                void rec.applyMicOptions({ ...micOptions, deviceId: e.target.value || undefined });
+              options={[
+                { value: '', label: 'System default' },
+                ...devices.map((d) => ({ value: d.deviceId, label: d.label || 'Microphone' })),
+              ]}
+              onChange={(v) => {
+                void rec.applyMicOptions({ ...micOptions, deviceId: v || undefined });
               }}
-            >
-              <option value="">System default</option>
-              {devices.map((d) => (
-                <option key={d.deviceId} value={d.deviceId}>
-                  {d.label || 'Microphone'}
-                </option>
-              ))}
-            </select>
+            />
           </label>
         )}
 
@@ -326,20 +343,19 @@ function TimingTab({ rec }: Props) {
         {take && (
           <>
             <div className="row wrap">
-              <select
-                value={take.id}
-                onChange={(e) => store().selectTake(e.target.value)}
+              <Dropdown
                 className="takepick"
-              >
-                {takes.map((t) => {
+                ariaLabel="Take"
+                value={take.id}
+                options={takes.map((t) => {
                   const track = project.tracks.find((x) => x.id === t.trackId);
-                  return (
-                    <option key={t.id} value={t.id}>
-                      {track?.name ?? '?'}: {t.name} ({t.noteIds.length} notes)
-                    </option>
-                  );
+                  return {
+                    value: t.id,
+                    label: `${track?.name ?? '?'}: ${t.name} (${t.noteIds.length} notes)`,
+                  };
                 })}
-              </select>
+                onChange={(v) => store().selectTake(v)}
+              />
               <button className="ghost sm" onClick={() => store().deleteTake(take.id)}>
                 Delete take
               </button>
@@ -574,20 +590,19 @@ function DetectTab() {
         <h3>Detector</h3>
         <label className="field">
           <span>Engine</span>
-          <select
+          <Dropdown
+            ariaLabel="Detector engine"
             value={engineChoice}
-            onChange={(e) => {
-              store().setTranscribeSetting('engine', e.target.value as DetectorEngine);
+            options={ENGINE_OPTIONS}
+            onChange={(v) => {
+              store().setTranscribeSetting('engine', v as DetectorEngine);
               if (take && getTakeAudio(take.id)) {
                 void store()
                   .retranscribeTake(take.id, { ...store().transcribeSettings, mode: take.settings.mode })
                   .then(() => engine.scheduleProject(store().project));
               }
             }}
-          >
-            <option value="neural">Neural (recommended)</option>
-            <option value="classic">Classic</option>
-          </select>
+          />
         </label>
         <p className="hint small">
           Neural runs Spotify’s Basic Pitch model on this device (about 1 MB, fetched once). Classic is used

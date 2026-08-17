@@ -14,8 +14,13 @@ import {
 import { renderProject } from '../audio/render';
 import { stopAll, togglePlay } from './transport';
 import { EffectsMenu, ShortcutsMenu, useDropdown, Item } from './EffectsMenu';
+import { Dropdown } from './Dropdown';
 import type { ScaleId } from '../model/types';
 import type { RecordPhase } from './useRecording';
+
+const KEY_OPTIONS = NOTE_NAMES.map((n, i) => ({ value: String(i), label: n }));
+const SCALE_OPTIONS = Object.entries(SCALES).map(([id, s]) => ({ value: id, label: s.label }));
+const GRID_OPTIONS = GRIDS.map((g, i) => ({ value: String(i), label: g.label }));
 
 interface Props {
   phase: RecordPhase;
@@ -103,7 +108,11 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
     <header className="topbar">
       <div className="topbar-row">
       <div className="brand">
-        <img className="logo" src={`${import.meta.env.BASE_URL}logo-fish.svg`} alt="MidiVoice" />
+        <img className="logo" src={`${import.meta.env.BASE_URL}logo-fish.svg`} alt="" />
+        <span className="wordmark">MidiVoice</span>
+      </div>
+
+      <div className="group">
         <input
           className="songname"
           value={project.name}
@@ -236,29 +245,21 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
       <div className="group m-hide">
         <label className="field">
           <span>Key</span>
-          <select
-            value={project.keyRoot}
-            onChange={(e) => store().setProjectMeta({ keyRoot: Number(e.target.value) })}
-          >
-            {NOTE_NAMES.map((n, i) => (
-              <option key={n} value={i}>
-                {n}
-              </option>
-            ))}
-          </select>
+          <Dropdown
+            ariaLabel="Key"
+            value={String(project.keyRoot)}
+            options={KEY_OPTIONS}
+            onChange={(v) => store().setProjectMeta({ keyRoot: Number(v) })}
+          />
         </label>
         <label className="field">
           <span>Scale</span>
-          <select
+          <Dropdown
+            ariaLabel="Scale"
             value={project.scale}
-            onChange={(e) => store().setProjectMeta({ scale: e.target.value as ScaleId })}
-          >
-            {Object.entries(SCALES).map(([id, s]) => (
-              <option key={id} value={id}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+            options={SCALE_OPTIONS}
+            onChange={(v) => store().setProjectMeta({ scale: v as ScaleId })}
+          />
         </label>
         <button
           className="ghost"
@@ -286,13 +287,12 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         </button>
         <label className="field m-hide">
           <span>Snap</span>
-          <select value={gridIndex} onChange={(e) => store().setSetting('gridIndex', Number(e.target.value))}>
-            {GRIDS.map((g, i) => (
-              <option key={g.label} value={i}>
-                {g.label}
-              </option>
-            ))}
-          </select>
+          <Dropdown
+            ariaLabel="Snap grid"
+            value={String(gridIndex)}
+            options={GRID_OPTIONS}
+            onChange={(v) => store().setSetting('gridIndex', Number(v))}
+          />
         </label>
         <EffectsMenu />
         <SongMenu />
@@ -539,26 +539,18 @@ function SongMenu() {
           </div>
           <div className="menu-row">
             <span className="menu-row-label">Key</span>
-            <select
-              value={project.keyRoot}
-              onChange={(e) => store().setProjectMeta({ keyRoot: Number(e.target.value) })}
-            >
-              {NOTE_NAMES.map((n, i) => (
-                <option key={n} value={i}>
-                  {n}
-                </option>
-              ))}
-            </select>
-            <select
+            <Dropdown
+              ariaLabel="Key"
+              value={String(project.keyRoot)}
+              options={KEY_OPTIONS}
+              onChange={(v) => store().setProjectMeta({ keyRoot: Number(v) })}
+            />
+            <Dropdown
+              ariaLabel="Scale"
               value={project.scale}
-              onChange={(e) => store().setProjectMeta({ scale: e.target.value as ScaleId })}
-            >
-              {Object.entries(SCALES).map(([id, s]) => (
-                <option key={id} value={id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+              options={SCALE_OPTIONS}
+              onChange={(v) => store().setProjectMeta({ scale: v as ScaleId })}
+            />
           </div>
           <div className="menu-row">
             <span className="menu-row-label" />
@@ -568,13 +560,12 @@ function SongMenu() {
           </div>
           <div className="menu-row">
             <span className="menu-row-label">Snap</span>
-            <select value={gridIndex} onChange={(e) => store().setSetting('gridIndex', Number(e.target.value))}>
-              {GRIDS.map((g, i) => (
-                <option key={g.label} value={i}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
+            <Dropdown
+              ariaLabel="Snap grid"
+              value={String(gridIndex)}
+              options={GRID_OPTIONS}
+              onChange={(v) => store().setSetting('gridIndex', Number(v))}
+            />
             <button
               className={`toggle ${project.loopEnabled ? 'on' : ''}`}
               onClick={() => {

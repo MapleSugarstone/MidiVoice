@@ -81,6 +81,13 @@ select {
   width: auto;
 }
 
+.wordmark {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
 .songname {
   background: transparent;
   border: 1px solid transparent;
@@ -445,6 +452,10 @@ button:disabled {
   width: 100%;
 }
 
+.instrument .dd {
+  width: 100%;
+}
+
 .track-controls {
   display: flex;
   flex-direction: column;
@@ -720,6 +731,15 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   font: 11px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+}
+
+.credits {
+  margin: 16px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(173, 198, 215, 0.5);
+  font-size: 10px;
+  color: rgba(56, 99, 122, 0.65);
+  text-align: center;
 }
 
 .error {
@@ -1014,6 +1034,78 @@ kbd {
   padding: 0 4px;
   font: 10px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
   color: var(--text);
+}
+
+/* ------------------------------------------------------- custom selects --- */
+
+.dd {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+/* The trigger reads as a field, not a button: flat panel fill, no sheen. */
+.dd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  background: var(--panel-2);
+  background-image: none;
+  box-shadow: none;
+}
+
+.dd-btn:hover:not(:disabled) {
+  background: #d5ebfb;
+  border-color: var(--line);
+}
+
+.dd-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dd-chevron {
+  flex: none;
+  color: var(--muted);
+}
+
+/* The list scrolls through ScrollArea so it wears the app's own rail. The
+   height cap sits on the inner view: capping the menu instead keeps the
+   view's percentage height from resolving, and nothing scrolls. */
+.dd-menu {
+  min-width: 0;
+}
+
+.dd-scroll .scrollarea-view {
+  height: auto;
+  max-height: calc(min(46vh, 340px) - 16px);
+}
+
+/* The rail's gutter is reserved on the right, as in the track panel. */
+.dd-scroll .scrollarea-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 17px;
+}
+
+.dd-menu .menu-item.selected {
+  background: rgba(0, 102, 134, 0.14);
+}
+
+.dd-check {
+  flex: none;
+  color: var(--accent);
+}
+
+.dd-optlabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ------------------------------------------------------------ floaters --- */
@@ -1412,9 +1504,27 @@ select {
     min-width: 0;
   }
 
-  .menu-row select {
+  .menu-row .dd {
     min-width: 0;
     flex: 1;
+  }
+
+  .menu-item {
+    white-space: normal;
+  }
+
+  /* A picker opened from inside a sheet expands in place instead of stacking
+     a second sheet: backdrop-filter pins fixed descendants to the sheet. */
+  .menu .dd-menu {
+    position: static;
+    min-width: 0;
+    margin: 2px 0;
+    background: rgba(255, 255, 255, 0.65);
+    box-shadow: inset 0 1px 3px rgba(20, 70, 110, 0.15);
+  }
+
+  .menu .dd-menu .scrollarea-view {
+    max-height: 220px;
   }
 
   .menu-row .numfield {

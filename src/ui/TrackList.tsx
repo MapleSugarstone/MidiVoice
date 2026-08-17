@@ -3,9 +3,14 @@ import { engine } from '../audio/engine';
 import { INSTRUMENTS } from '../audio/instruments';
 import { NOTE_NAMES, SCALES, snapToScale } from '../model/music';
 import { ScrollArea } from './ScrollArea';
+import { Dropdown } from './Dropdown';
 import type { InstrumentId, Project, Track } from '../model/types';
 
 const GROUPS = Array.from(new Set(INSTRUMENTS.map((i) => i.group)));
+
+const INSTRUMENT_OPTIONS = GROUPS.flatMap((g) =>
+  INSTRUMENTS.filter((i) => i.group === g).map((i) => ({ value: i.id, label: i.label, group: g })),
+);
 
 /** Say what switching "in key" did, since on an already-in-key part it does nothing. */
 function inKeyReport(track: Track, project: Project, on: boolean): string {
@@ -100,27 +105,19 @@ export function TrackList() {
                 </span>
               </div>
 
-              <select
-                className="instrument"
-                value={track.instrument}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  store().setInstrument(track.id, e.target.value as InstrumentId);
-                  const s = store();
-                  engine.syncTracks(s.project.tracks);
-                  engine.scheduleProject(s.project);
-                }}
-              >
-                {GROUPS.map((g) => (
-                  <optgroup key={g} label={g}>
-                    {INSTRUMENTS.filter((i) => i.group === g).map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <div className="instrument" onClick={(e) => e.stopPropagation()}>
+                <Dropdown
+                  ariaLabel="Instrument"
+                  value={track.instrument}
+                  options={INSTRUMENT_OPTIONS}
+                  onChange={(v) => {
+                    store().setInstrument(track.id, v as InstrumentId);
+                    const s = store();
+                    engine.syncTracks(s.project.tracks);
+                    engine.scheduleProject(s.project);
+                  }}
+                />
+              </div>
 
               <div className="track-controls" onClick={(e) => e.stopPropagation()}>
                 <div className="chips">
