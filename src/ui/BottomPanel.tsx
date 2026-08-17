@@ -143,7 +143,7 @@ function RecordTab({ rec }: Props) {
                   : rec.phase === 'arming'
                     ? isMidi ? 'Waiting for MIDI…' : 'Opening mic…'
                     : activeTrack
-                      ? `● Record onto “${activeTrack.name}”`
+                      ? '● Record'
                       : 'Add a track to record onto'}
           </button>
         </div>
