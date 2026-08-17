@@ -1259,6 +1259,12 @@ kbd {
   padding-right: env(safe-area-inset-right);
 }
 
+/* Grid items default to min-width auto, so the toolbar's intrinsic width was
+   forcing the whole app column wider than the phone screen. */
+.app > * {
+  min-width: 0;
+}
+
 /* Pinch-zooming out (and overscroll) paints the canvas beyond the page box.
    A solid color on html covers it; without this the body gradient tiles. */
 html {

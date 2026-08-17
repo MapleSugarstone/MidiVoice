@@ -125,6 +125,11 @@ export function PianoRoll() {
   const rowHMemo = useRef({ ...DEFAULT_ROW_H });
 
   const dragRef = useRef<DragState | null>(null);
+  // Touch: active fingers on the grid, the pinch between the first two, and
+  // the scroll-or-tap state of a finger on the keys column.
+  const touchesRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ dist: number } | null>(null);
+  const keysPanRef = useRef<{ startY: number; scrollRow0: number; panning: boolean } | null>(null);
   // Length given to the next drawn note, following whatever was last drawn or resized.
   const lastDrawDurRef = useRef<number | null>(null);
   const viewRef = useRef(view);
@@ -814,6 +819,18 @@ export function PianoRoll() {
     const store = useStore.getState();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
+    if (e.pointerType === 'touch') {
+      touchesRef.current.set(e.pointerId, { x, y });
+      // A second finger turns whatever the first was doing into a pinch,
+      // unless the first finger already grabbed a note.
+      if (touchesRef.current.size === 2 && (!dragRef.current || dragRef.current.kind === 'pan' || dragRef.current.kind === 'select')) {
+        const [a, b] = [...touchesRef.current.values()];
+        pinchRef.current = { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)) };
+        dragRef.current = null;
+        return;
+      }
+    }
+
     if (e.button === 1 || (e.button === 0 && e.altKey && e.shiftKey)) {
       dragRef.current = {
         kind: 'pan', startX: x, startY: y, startBeat: xToBeat(x), startRow: yToRow(y),
@@ -899,6 +916,18 @@ export function PianoRoll() {
       return;
     }
 
+    // Touch has no wheel or modifier keys, so a finger on empty space pans
+    // the view instead of rubber-banding. A tap still clears the selection.
+    if (e.pointerType === 'touch') {
+      dragRef.current = {
+        kind: 'pan', startX: x, startY: y, startBeat: xToBeat(x), startRow: yToRow(y),
+        curX: x, curY: y, primaryId: null, originals: new Map(), additive: false,
+        scrollBeat0: viewRef.current.scrollBeat, scrollRow0: viewRef.current.scrollRow, lastPreviewMidi: -1,
+        moved: false,
+      };
+      return;
+    }
+
     if (!e.shiftKey) store.clearSelection();
     dragRef.current = {
       kind: 'select', startX: x, startY: y, startBeat: xToBeat(x), startRow: yToRow(y),
@@ -911,6 +940,17 @@ export function PianoRoll() {
   const onPointerMove = (e: React.PointerEvent) => {
     const drag = dragRef.current;
     const { x, y } = localPos(e);
+
+    if (e.pointerType === 'touch' && touchesRef.current.has(e.pointerId)) {
+      touchesRef.current.set(e.pointerId, { x, y });
+      if (pinchRef.current && touchesRef.current.size >= 2) {
+        const [a, b] = [...touchesRef.current.values()];
+        const dist = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+        zoom(dist / pinchRef.current.dist, (a.x + b.x) / 2, (a.y + b.y) / 2);
+        pinchRef.current.dist = dist;
+        return;
+      }
+    }
 
     if (!drag) {
       // Hover cursor feedback for the resize handle.
@@ -1022,9 +1062,16 @@ export function PianoRoll() {
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') {
+      touchesRef.current.delete(e.pointerId);
+      if (touchesRef.current.size < 2) pinchRef.current = null;
+    }
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag) return;
+    if (drag.kind === 'pan' && !drag.moved && e.pointerType === 'touch') {
+      useStore.getState().clearSelection();
+    }
     if (drag.kind === 'resize' && drag.moved && drag.primaryId) {
       const n = useStore.getState().project.tracks
         .find((t) => t.id === activeTrackId)?.notes.find((x) => x.id === drag.primaryId);
@@ -1127,6 +1174,12 @@ export function PianoRoll() {
     if (!activeTrack) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const { x, y } = localPos(e);
+    // On touch the keys column is the scroll rail: drag scrolls, tap previews
+    // on release once it is clear no scroll was meant.
+    if (e.pointerType === 'touch') {
+      keysPanRef.current = { startY: y, scrollRow0: viewRef.current.scrollRow, panning: false };
+      return;
+    }
     const midi = keyAt(x, y);
     keyPreviewMidi.current = midi;
     pressedKeyRef.current = midi;
@@ -1138,6 +1191,20 @@ export function PianoRoll() {
   const onKeysMove = (e: React.PointerEvent) => {
     if (!activeTrack) return;
     const { x, y } = localPos(e);
+    const pan = keysPanRef.current;
+    if (pan) {
+      const dy = y - pan.startY;
+      if (!pan.panning && Math.abs(dy) > 6) pan.panning = true;
+      if (pan.panning) {
+        const v = viewRef.current;
+        const maxRow = Math.max(0, rowCount(activeTrack) - size.h / v.rowH);
+        setView((prev) => ({
+          ...prev,
+          scrollRow: Math.max(0, Math.min(maxRow, pan.scrollRow0 - dy / v.rowH)),
+        }));
+      }
+      return;
+    }
     const midi = keyAt(x, y);
     let dirty = false;
     if (hoverKeyRef.current !== midi) {
@@ -1154,6 +1221,12 @@ export function PianoRoll() {
   };
 
   const onKeysUp = (e: React.PointerEvent) => {
+    const pan = keysPanRef.current;
+    keysPanRef.current = null;
+    if (pan && !pan.panning && activeTrack) {
+      const { x, y } = localPos(e);
+      engine.preview(activeTrack.id, keyAt(x, y));
+    }
     keyPreviewMidi.current = -1;
     pressedKeyRef.current = -1;
     drawKeys();
