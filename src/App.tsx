@@ -282,9 +282,6 @@ export default function App() {
           {rec.phase === 'countIn' ? 'Count-in…' : '● Recording'}
         </div>
       )}
-      {needsGesture && (
-        <div className="gesture-hint">Click anywhere to start the audio engine</div>
-      )}
     </div>
   );
 }

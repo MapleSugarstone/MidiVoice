@@ -19,7 +19,19 @@ interface Props {
 
 export function BottomPanel({ rec }: Props) {
   const [tab, setTab] = useState<Tab>('record');
+  // Landscape phones have no height to spare, so the panel starts folded there
+  // and folds again on rotation into landscape. Unfolding is left to the user.
+  const [collapsed, setCollapsed] = useState(() => window.matchMedia('(max-height: 520px)').matches);
   const status = useStore((s) => s.status);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-height: 520px)');
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setCollapsed(true);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   return (
     <section className="bottom">
@@ -31,20 +43,41 @@ export function BottomPanel({ rec }: Props) {
             ['detect', 'Detection'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
-          <button key={id} className={tab === id ? 'tab active' : 'tab'} onClick={() => setTab(id)}>
+          <button
+            key={id}
+            className={tab === id && !collapsed ? 'tab active' : 'tab'}
+            onClick={() => {
+              if (tab === id && !collapsed) {
+                setCollapsed(true);
+              } else {
+                setTab(id);
+                setCollapsed(false);
+              }
+            }}
+          >
             {label}
           </button>
         ))}
         <div className="status" title={status}>
           {status}
         </div>
+        <button
+          className="tab"
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? 'Show panel' : 'Hide panel'}
+          aria-label={collapsed ? 'Show panel' : 'Hide panel'}
+        >
+          {collapsed ? '▴' : '▾'}
+        </button>
       </nav>
 
-      <ScrollArea className="tabbody">
-        {tab === 'record' && <RecordTab rec={rec} />}
-        {tab === 'timing' && <TimingTab rec={rec} />}
-        {tab === 'detect' && <DetectTab />}
-      </ScrollArea>
+      {!collapsed && (
+        <ScrollArea className="tabbody">
+          {tab === 'record' && <RecordTab rec={rec} />}
+          {tab === 'timing' && <TimingTab rec={rec} />}
+          {tab === 'detect' && <DetectTab />}
+        </ScrollArea>
+      )}
     </section>
   );
 }

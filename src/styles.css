@@ -1031,20 +1031,6 @@ kbd {
   box-shadow: 0 6px 22px rgba(0, 102, 134, 0.35);
 }
 
-.gesture-hint {
-  position: fixed;
-  bottom: 46vh;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(231, 244, 253, 0.95);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  padding: 8px 18px;
-  border-radius: 999px;
-  pointer-events: none;
-  z-index: 20;
-}
-
 /* Scrollbars are styled with the rest of the glass dressing, further down. */
 
 @media (max-width: 1100px) {
@@ -1247,13 +1233,6 @@ button {
   text-shadow: 0 1px 2px rgba(0, 45, 62, 0.4);
 }
 
-.gesture-hint {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(8px);
-  border-color: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 16px rgba(30, 90, 140, 0.2);
-}
-
 kbd {
   background: linear-gradient(180deg, #ffffff, #dceefa);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -1262,3 +1241,198 @@ kbd {
 /* Scrolling panels use their own rail (see ScrollArea), so there is no native
    scrollbar left in the app to dress. */
 /* bwp:keep:end */
+
+/* --------------------------------------------------------------- mobile --- */
+
+/* dvh tracks the visible height while mobile URL bars show and hide. */
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+  }
+}
+
+/* Keep the chrome out of the rounded corners on notched phones. */
+.app {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+button,
+input,
+select {
+  touch-action: manipulation;
+}
+
+/* Phone in either orientation. The toolbar rows become side-scrolling strips
+   instead of wrapping into a wall of rows, dropdowns become bottom sheets,
+   and controls grow to touch size. */
+@media (max-width: 760px), (max-height: 520px) {
+  .topbar {
+    padding: 0 8px;
+  }
+
+  .topbar-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    scrollbar-width: none;
+  }
+
+  .topbar-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .group {
+    flex: 0 0 auto;
+    gap: 6px;
+    padding-left: 8px;
+  }
+
+  .songname {
+    width: 120px;
+    min-width: 80px;
+  }
+
+  .field.slider input[type='range'] {
+    width: 64px;
+  }
+
+  /* 16px text keeps iOS from zooming the page into a focused field. */
+  input[type='number'],
+  input[type='text'],
+  select {
+    font-size: 16px;
+  }
+
+  .transport-btn {
+    width: 40px;
+    height: 34px;
+  }
+
+  .numsteps button {
+    padding: 0 8px;
+  }
+
+  .menu,
+  .menu.right {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 60;
+    min-width: 0;
+    max-height: min(60vh, 430px);
+    overflow-y: auto;
+  }
+
+  .menu-summary,
+  .menu-keys {
+    white-space: normal;
+  }
+
+  .status {
+    font-size: 11px;
+    max-width: 32vw;
+  }
+
+  .tab {
+    padding: 9px 10px;
+  }
+
+  .tabbody .scrollarea-content {
+    padding: 10px 16px 12px 10px;
+  }
+
+  .pane {
+    gap: 14px;
+  }
+
+  .col.narrow {
+    padding-top: 10px;
+  }
+
+  .slider-row {
+    grid-template-columns: 104px minmax(0, 1fr) 56px;
+    gap: 8px;
+  }
+
+  .nudge-row input[type='range'] {
+    min-width: 120px;
+  }
+
+  .takepick {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* Portrait phone: the track list rides above the roll as a swipeable strip
+   of cards, so the roll keeps most of the height. */
+@media (max-width: 760px) and (orientation: portrait) {
+  .middle {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .tracklist {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+  }
+
+  .panel-head h2 {
+    margin: 0;
+  }
+
+  .tracks {
+    flex: none;
+  }
+
+  /* Height comes from the cards; ScrollArea's own rail hides itself when
+     there is no vertical overflow. */
+  .tracks .scrollarea-view {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .tracks .scrollarea-content {
+    flex-direction: row;
+    align-items: stretch;
+    width: max-content;
+    min-width: 100%;
+    padding: 8px;
+  }
+
+  .track {
+    flex: 0 0 236px;
+  }
+
+  .empty-tracks {
+    white-space: nowrap;
+  }
+
+  .bottom {
+    max-height: 38vh;
+  }
+}
+
+/* Landscape phone: height is the scarce axis. A narrower track rail, and the
+   bottom panel may cover more when opened since it can be collapsed. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .middle {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .bottom {
+    max-height: 60vh;
+  }
+}
