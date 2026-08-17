@@ -1,4 +1,4 @@
-import type { GridSetting, ScaleId } from './types';
+import type { GridSetting, ScaleId, Track } from './types';
 
 export const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -53,6 +53,95 @@ export function snapToScale(midi: number, keyRoot: number, scale: ScaleId): numb
     if (inScale(rounded - dist, keyRoot, scale)) return rounded - dist;
   }
   return rounded;
+}
+
+/**
+ * Krumhansl-Kessler key profiles: how strongly each scale degree implies the
+ * key, from probe-tone experiments. Correlating a piece's duration-weighted
+ * pitch-class histogram against all 24 rotations is the standard
+ * Krumhansl-Schmuckler key-finding algorithm.
+ */
+const KK_MAJOR = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
+const KK_MINOR = [6.33, 2.68, 3.52, 5.38, 2.6, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+
+function pearson(a: number[], b: number[]): number {
+  const n = a.length;
+  let ma = 0;
+  let mb = 0;
+  for (let i = 0; i < n; i++) {
+    ma += a[i];
+    mb += b[i];
+  }
+  ma /= n;
+  mb /= n;
+  let num = 0;
+  let da = 0;
+  let db = 0;
+  for (let i = 0; i < n; i++) {
+    num += (a[i] - ma) * (b[i] - mb);
+    da += (a[i] - ma) ** 2;
+    db += (b[i] - mb) ** 2;
+  }
+  return da > 0 && db > 0 ? num / Math.sqrt(da * db) : 0;
+}
+
+export interface DetectedKey {
+  keyRoot: number;
+  scale: ScaleId;
+  /** Pearson fit of the winner, roughly 0.5 (weak) to 0.95 (clear). */
+  score: number;
+  /** Winner minus runner-up. Below ~0.05 the two keys are hard to tell apart. */
+  margin: number;
+  runnerUp: { keyRoot: number; scale: ScaleId };
+}
+
+/**
+ * Fit a key and scale to the notes on all melodic tracks. Votes are weighted
+ * by duration so brief passing tones barely count, and capped so a single
+ * held drone cannot decide the key by itself. Returns null when there is not
+ * enough material to say anything.
+ */
+export function detectKey(tracks: Track[]): DetectedKey | null {
+  const hist = new Array(12).fill(0);
+  let total = 0;
+  let count = 0;
+  for (const t of tracks) {
+    if (t.isDrum) continue;
+    for (const n of t.notes) {
+      const w = Math.min(2, Math.max(0.1, n.duration));
+      hist[((n.midi % 12) + 12) % 12] += w;
+      total += w;
+      count++;
+    }
+  }
+  const usedPcs = hist.filter((v) => v > 0).length;
+  if (count < 4 || usedPcs < 3 || total < 2) return null;
+
+  const fits: { keyRoot: number; minor: boolean; r: number }[] = [];
+  for (let root = 0; root < 12; root++) {
+    const rotated = hist.map((_, degree) => hist[(root + degree) % 12]);
+    fits.push({ keyRoot: root, minor: false, r: pearson(rotated, KK_MAJOR) });
+    fits.push({ keyRoot: root, minor: true, r: pearson(rotated, KK_MINOR) });
+  }
+  fits.sort((a, b) => b.r - a.r);
+  const [best, second] = fits;
+
+  // The profiles only separate major from minor. A minor result with a real
+  // leading tone and no subtonic is closer to harmonic minor for snapping.
+  const asScale = (f: { keyRoot: number; minor: boolean }): ScaleId => {
+    if (!f.minor) return 'major';
+    const leading = hist[(f.keyRoot + 11) % 12];
+    const subtonic = hist[(f.keyRoot + 10) % 12];
+    return leading > subtonic * 2 && leading >= total * 0.03 ? 'harmonicMinor' : 'naturalMinor';
+  };
+
+  return {
+    keyRoot: best.keyRoot,
+    scale: asScale(best),
+    score: best.r,
+    margin: best.r - second.r,
+    runnerUp: { keyRoot: second.keyRoot, scale: asScale(second) },
+  };
 }
 
 export const GRIDS: GridSetting[] = [

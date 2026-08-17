@@ -15,4 +15,9 @@ export default defineConfig({
     outDir: 'dist',
     target: 'es2022',
   },
+  worker: {
+    // The transcription worker lazily imports the neural model, and dynamic
+    // imports inside a worker need ES output (the iife default can't split).
+    format: 'es',
+  },
 });

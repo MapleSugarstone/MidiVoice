@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { engine } from '../audio/engine';
 import { MicRecorder, type MicOptions } from '../audio/recorder';
 import { midiInput } from '../audio/midiInput';
-import { transcribeAsync } from '../audio/transcribe';
+import { preloadTranscription, transcribeAsync } from '../audio/transcribeClient';
 import { calibrateLatency, type CalibrationResult } from '../audio/calibration';
 import { useStore } from '../model/store';
 import { beatsToSeconds, secondsToBeats } from '../model/music';
@@ -176,10 +176,10 @@ export function useRecording() {
     setPhase('arming');
     if (!(await ensureMic())) return;
 
-    // Fetch the neural model during the count-in so it's warm by the time the
-    // take ends. Fire-and-forget: a failure just means the fallback runs later.
+    // Fetch the neural model AND compile its shaders during the count-in so
+    // the take decodes warm. Fire-and-forget: a failure just falls back later.
     if ((store.transcribeSettings.engine ?? 'neural') === 'neural' && store.inputMode !== 'drums') {
-      void import('../audio/neuralPitch').then((m) => m.preloadNeural()).catch(() => {});
+      preloadTranscription();
     }
 
     const { project, countInBars, metronome } = store;

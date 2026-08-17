@@ -6,7 +6,7 @@ import {
   type RawNote,
   type TranscriptionResult,
 } from './transcribe';
-import { ampFromDb, median } from './dsp';
+import { ampFromDb, median, resampleSinc } from './dsp';
 
 const MODEL_SAMPLE_RATE = 22050;
 const MODEL_FFT_HOP = 256;
@@ -22,8 +22,19 @@ interface Loaded {
 
 let loaded: Promise<Loaded> | null = null;
 
+let modelUrlOverride: string | null = null;
+
+/**
+ * The worker cannot resolve the default relative URL (its own script lives
+ * under assets/ and the app is built with a relative base), so the client
+ * passes an absolute URL in before the model loads.
+ */
+export function setModelUrl(url: string): void {
+  modelUrlOverride = url;
+}
+
 function modelUrl(): string {
-  return `${import.meta.env.BASE_URL}basic-pitch/model.json`;
+  return modelUrlOverride ?? `${import.meta.env.BASE_URL}basic-pitch/model.json`;
 }
 
 /** Load the library and model once, clearing the cache on failure so a later take can retry. */
@@ -42,34 +53,45 @@ function loadBasicPitch(): Promise<Loaded> {
   return loaded;
 }
 
-/** Start fetching the model in the background (e.g. while the mic arms). */
-export function preloadNeural(): void {
-  loadBasicPitch().catch(() => {});
+let warmed: Promise<void> | null = null;
+
+/**
+ * Load the model and push one second of silence through it. The first
+ * inference pays WebGL shader compilation (several seconds on a cold page),
+ * so doing it during the count-in means the take itself decodes warm.
+ */
+export function warmupNeural(): Promise<void> {
+  if (!warmed) {
+    warmed = (async () => {
+      const { model } = await loadBasicPitch();
+      await model.evaluateModel(new Float32Array(MODEL_SAMPLE_RATE), () => {}, () => {});
+    })().catch((err) => {
+      warmed = null;
+      throw err;
+    });
+  }
+  return warmed;
 }
 
-/** Resample to the model's 22050 Hz, de-tuning by shiftSemis via playback rate (times stretch by 1/rate) so sung pitches sit inside the model's absolute semitone bins instead of on their boundaries. */
-async function resampleForModel(
+/** Start fetching and warming the model in the background (e.g. while the mic arms). */
+export function preloadNeural(): void {
+  warmupNeural().catch(() => {});
+}
+
+/** Resample to the model's 22050 Hz, de-tuning by shiftSemis via the read rate (times stretch by 1/rate) so sung pitches sit inside the model's absolute semitone bins instead of on their boundaries. */
+function resampleForModel(
   audio: Float32Array,
   sampleRate: number,
   shiftSemis: number,
-): Promise<{ samples: Float32Array; timeScale: number }> {
+): { samples: Float32Array; timeScale: number } {
   const rate = Math.pow(2, shiftSemis / 12);
   if (sampleRate === MODEL_SAMPLE_RATE && Math.abs(shiftSemis) < 1e-3) {
     return { samples: audio, timeScale: 1 };
   }
-  const durationOut = audio.length / sampleRate / rate;
-  const length = Math.max(1, Math.ceil(durationOut * MODEL_SAMPLE_RATE));
-  const ctx = new OfflineAudioContext(1, length, MODEL_SAMPLE_RATE);
-  const buf = ctx.createBuffer(1, audio.length, sampleRate);
-  buf.getChannelData(0).set(audio);
-  const src = ctx.createBufferSource();
-  src.buffer = buf;
-  src.playbackRate.value = rate;
-  src.connect(ctx.destination);
-  src.start();
-  const rendered = await ctx.startRendering();
+  const step = (rate * sampleRate) / MODEL_SAMPLE_RATE;
+  const outLength = Math.max(1, Math.ceil(audio.length / step));
   // An event at output time t happened at t * rate in the original audio.
-  return { samples: rendered.getChannelData(0), timeScale: rate };
+  return { samples: resampleSinc(audio, step, outLength), timeScale: rate };
 }
 
 interface TimedNote {
@@ -111,12 +133,14 @@ export async function transcribeNeural(
   settings: TranscribeSettings,
 ): Promise<TranscriptionResult> {
   const { lib, model } = await loadBasicPitch();
+  // Let an in-flight warmup finish rather than contending with it for the GPU.
+  if (warmed) await warmed.catch(() => {});
 
   // The YIN pass runs first because its tuning estimate steers the de-tuned resample below.
   const pc = analyzePitchContour(audio, sampleRate, settings);
   const offsetSemis = pc.tuningOffsetCents / 100;
 
-  const { samples: resampled, timeScale } = await resampleForModel(audio, sampleRate, -offsetSemis);
+  const { samples: resampled, timeScale } = resampleForModel(audio, sampleRate, -offsetSemis);
 
   const frames: number[][] = [];
   const onsets: number[][] = [];

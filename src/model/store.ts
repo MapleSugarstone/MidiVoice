@@ -15,7 +15,7 @@ import type {
 import { DEFAULT_TRANSCRIBE } from './types';
 import { GRIDS, beatsToSeconds, gridBeats, quantizeValue, secondsToBeats, snapToScale } from './music';
 import type { RawNote } from '../audio/transcribe';
-import { transcribeAsync } from '../audio/transcribe';
+import { transcribeAsync } from '../audio/transcribeClient';
 import { dropTakeAudio, getTakeAudio, putTakeAudio } from '../audio/takeAudio';
 import type { MicOptions } from '../audio/recorder';
 import { DEFAULT_MIC_OPTIONS } from '../audio/recorder';

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../model/store';
 import { engine } from '../audio/engine';
-import { GRIDS, NOTE_NAMES, SCALES, formatBarBeat } from '../model/music';
+import { GRIDS, NOTE_NAMES, SCALES, detectKey, formatBarBeat } from '../model/music';
 import {
   exportMidiFile,
   exportFishFile,
@@ -27,6 +27,24 @@ interface Props {
 function barLabel(beat: number, beatsPerBar: number): string {
   const bar = beat / beatsPerBar + 1;
   return Number.isInteger(bar) ? String(bar) : bar.toFixed(2);
+}
+
+/** Fit key and scale to the song's notes and apply them (undoable via setProjectMeta). */
+function detectAndSetKey() {
+  const store = useStore.getState();
+  const guess = detectKey(store.project.tracks);
+  if (!guess) {
+    store.setStatus('Not enough notes to detect a key yet');
+    return;
+  }
+  store.setProjectMeta({ keyRoot: guess.keyRoot, scale: guess.scale });
+  const name = (k: { keyRoot: number; scale: ScaleId }) =>
+    `${NOTE_NAMES[k.keyRoot]} ${SCALES[k.scale].label.toLowerCase()}`;
+  store.setStatus(
+    guess.margin < 0.05
+      ? `Key set to ${name(guess)} (${name(guess.runnerUp)} also fits)`
+      : `Key set to ${name(guess)}`,
+  );
 }
 
 export function TopBar({ phase, onToggleRecord, position }: Props) {
@@ -242,6 +260,13 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
             ))}
           </select>
         </label>
+        <button
+          className="ghost"
+          onClick={detectAndSetKey}
+          title="Fit the key and scale to the notes in the song"
+        >
+          Detect
+        </button>
       </div>
 
       <div className="group tools">
@@ -534,6 +559,12 @@ function SongMenu() {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="menu-row">
+            <span className="menu-row-label" />
+            <button className="ghost" onClick={detectAndSetKey} title="Fit the key and scale to the notes in the song">
+              Detect key
+            </button>
           </div>
           <div className="menu-row">
             <span className="menu-row-label">Snap</span>

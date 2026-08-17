@@ -392,3 +392,37 @@ export function envelope(buf: Float32Array, buckets: number): Float32Array {
   }
   return out;
 }
+
+/**
+ * Lanczos-3 windowed-sinc resampler. `step` is how many input samples each
+ * output sample advances, so step > 1 decimates and the kernel widens to act
+ * as the anti-aliasing lowpass. Replaces OfflineAudioContext resampling in
+ * paths that must also run inside a worker, where Web Audio does not exist.
+ */
+export function resampleSinc(input: Float32Array, step: number, outLength: number): Float32Array {
+  const out = new Float32Array(outLength);
+  const scale = Math.min(1, 1 / step);
+  const half = 3 / scale;
+  for (let i = 0; i < outLength; i++) {
+    const center = i * step;
+    const start = Math.max(0, Math.ceil(center - half));
+    const end = Math.min(input.length - 1, Math.floor(center + half));
+    let acc = 0;
+    let norm = 0;
+    for (let m = start; m <= end; m++) {
+      const x = (m - center) * scale;
+      let w: number;
+      if (x === 0) w = 1;
+      else if (x <= -3 || x >= 3) w = 0;
+      else {
+        const px = Math.PI * x;
+        w = (3 * Math.sin(px) * Math.sin(px / 3)) / (px * px);
+      }
+      acc += input[m] * w;
+      norm += w;
+    }
+    // Normalising by the kernel sum keeps unity gain at the buffer edges too.
+    out[i] = norm > 1e-9 ? acc / norm : 0;
+  }
+  return out;
+}
