@@ -1,6 +1,6 @@
 import * as Tone from 'tone';
 import { createInstrument, type PlayableInstrument } from './instruments';
-import { midiToFreq, snapToScale } from '../model/music';
+import { midiToFreq } from '../model/music';
 import type { Project, Track } from '../model/types';
 
 interface Channel {
@@ -198,16 +198,12 @@ class AudioEngine {
       ch.part?.dispose();
 
       const events = track.notes.filter((n) => n.start >= 0).map((note) => {
-        const playedMidi = track.snapToScale
-          ? snapToScale(note.midi, project.keyRoot, project.scale)
-          : note.midi;
-        // tuneStrength 0 = exactly as sung, 1 = dead on the grid note.
-        const cents = note.detune * (1 - track.tuneStrength);
-        const freq = track.isDrum ? midiToFreq(playedMidi) : midiToFreq(playedMidi + cents / 100);
+        // Playback is always at the exact stored semitone.
+        const freq = midiToFreq(note.midi);
         return {
           time: `${Math.round(note.start * ppq)}i`,
           freq,
-          midi: playedMidi,
+          midi: note.midi,
           durationTicks: Math.max(1, Math.round(note.duration * ppq)),
           // Notes have no individual volume; the track's volume fader is the only level control.
           velocity: 0.8,

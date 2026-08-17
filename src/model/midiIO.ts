@@ -1,6 +1,6 @@
 import { Midi } from '@tonejs/midi';
 import type { InstrumentId, Project, Track } from './types';
-import { beatsToSeconds, secondsToBeats, snapToScale } from './music';
+import { beatsToSeconds, secondsToBeats } from './music';
 import { makeProject, makeTrack, newId } from './store';
 import { getTakeAudio, putTakeAudio } from '../audio/takeAudio';
 import { float32ToWav } from '../audio/render';
@@ -85,11 +85,8 @@ export function projectToMidi(project: Project): Uint8Array {
     t.instrument.number = GM_PROGRAM[track.instrument] ?? 0;
 
     for (const note of track.notes) {
-      const midiNote = track.snapToScale
-        ? snapToScale(note.midi, project.keyRoot, project.scale)
-        : note.midi;
       t.addNote({
-        midi: Math.max(0, Math.min(127, Math.round(midiNote))),
+        midi: Math.max(0, Math.min(127, Math.round(note.midi))),
         time: beatsToSeconds(note.start, project.bpm),
         duration: Math.max(0.02, beatsToSeconds(note.duration, project.bpm)),
         velocity: FIXED_VELOCITY,

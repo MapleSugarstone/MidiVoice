@@ -371,8 +371,8 @@ function TimingTab({ rec }: Props) {
                 </button>
                 <input
                   type="range"
-                  min={-400}
-                  max={400}
+                  min={-800}
+                  max={800}
                   step={1}
                   value={take.nudgeMs}
                   onChange={(e) => {

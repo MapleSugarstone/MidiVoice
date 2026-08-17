@@ -166,7 +166,6 @@ export interface AppState {
   /** Squeeze (or stretch) the selection in time, about its first note. */
   scaleSelectionTiming: (factor: number) => void;
   tuneSelectionToScale: () => void;
-  flattenSelectionTuning: () => void;
   copySelection: () => void;
   cutSelection: () => void;
   pasteAt: (beat: number, trackId?: string) => void;
@@ -610,16 +609,6 @@ export const useStore = create<AppState>((set, get) => ({
       }
     });
     set({ status: 'Snapped selection into key' });
-  },
-
-  /** Throw away the sung cents offset so notes sit dead on the grid pitch. */
-  flattenSelectionTuning: () => {
-    const ids = get().selectedNoteIds;
-    if (ids.length === 0) return;
-    get().transact((p) => {
-      for (const { note } of findNotes(p, ids)) note.detune = 0;
-    });
-    set({ status: 'Tuning flattened to exact pitches' });
   },
 
   copySelection: () => {

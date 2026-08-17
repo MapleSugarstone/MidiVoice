@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../model/store';
 import { engine } from '../audio/engine';
-import { GRIDS, midiToName, drumLaneName, snapToScale } from '../model/music';
+import { GRIDS, NOTE_NAMES, SCALES, midiToName, drumLaneName } from '../model/music';
 
 /** Dropdown state that closes on outside pointerdown or Escape. */
 export function useDropdown() {
@@ -62,8 +62,6 @@ export function EffectsMenu() {
   const none = count === 0;
   const grid = GRIDS[gridIndex].label;
 
-  const avgDetune = count ? selected.reduce((a, s) => a + s.note.detune, 0) / count : 0;
-
   const after = () => engine.scheduleProject(useStore.getState().project);
   // One-shot actions close the menu; the transpose row and slider stay open.
   const run = (fn: () => void) => {
@@ -81,17 +79,13 @@ export function EffectsMenu() {
     const s = selected[0];
     const name = s.track.isDrum
       ? drumLaneName(s.note.midi)
-      : midiToName(s.track.snapToScale ? snapToScale(s.note.midi, project.keyRoot, project.scale) : s.note.midi);
+      : midiToName(s.note.midi);
     summary = `${name} · ${s.note.duration.toFixed(2)} beats`;
   } else if (count > 1) {
     const lo = midiToName(Math.min(...selected.map((s) => s.note.midi)));
     const hi = midiToName(Math.max(...selected.map((s) => s.note.midi)));
     summary = `${count} notes · ${lo}–${hi}`;
   }
-  if (count > 0 && !track?.isDrum && Math.abs(avgDetune) >= 1) {
-    summary += ` · drift ${avgDetune > 0 ? '+' : ''}${avgDetune.toFixed(0)}¢`;
-  }
-
   return (
     <div className="menuwrap" ref={ref}>
       <button
@@ -116,8 +110,11 @@ export function EffectsMenu() {
           <Item label="Slow down 25%" disabled={none} onClick={() => run(() => store().scaleSelectionTiming(4 / 3))} />
 
           <div className="menu-label">Pitch</div>
-          <Item label="Force into key" disabled={none || !!track?.isDrum} onClick={() => run(() => store().tuneSelectionToScale())} />
-          <Item label="Remove tuning drift" disabled={none} onClick={() => run(() => store().flattenSelectionTuning())} />
+          <Item
+            label={`Force into ${NOTE_NAMES[project.keyRoot]} ${SCALES[project.scale].label.toLowerCase()}`}
+            disabled={none || !!track?.isDrum}
+            onClick={() => run(() => store().tuneSelectionToScale())}
+          />
           <div className="menu-row">
             <span className="menu-row-label">Transpose</span>
             <button className="ghost sm" disabled={none} title="Down an octave" onClick={() => runStay(() => store().nudgeSelection(0, -12))}>−12</button>

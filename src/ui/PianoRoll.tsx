@@ -12,7 +12,6 @@ import {
   midiToName,
   quantizeValue,
   secondsToBeats,
-  snapToScale,
 } from '../model/music';
 import type { Note, Project, Track } from '../model/types';
 
@@ -71,17 +70,6 @@ function rowOfMidi(track: Track | undefined, midi: number): number {
   return 127 - midi;
 }
 
-/**
- * The pitch a note is actually played at. An "in key" track is corrected onto
- * the song's scale at playback, so the roll draws it there too: otherwise the
- * setting changes what you hear with nothing on screen to show for it.
- */
-function playedMidi(track: Track | undefined, midi: number, project: Project): number {
-  return track && !track.isDrum && track.snapToScale
-    ? snapToScale(midi, project.keyRoot, project.scale)
-    : midi;
-}
-
 function midiOfRow(track: Track | undefined, row: number): number {
   if (track?.isDrum) {
     const clamped = Math.max(0, Math.min(DRUM_LANES.length - 1, Math.round(row)));
@@ -90,13 +78,6 @@ function midiOfRow(track: Track | undefined, row: number): number {
   return 127 - Math.round(row);
 }
 
-/** Pitch and cents for auditioning a note, matching what playback will do with it. */
-function auditionOf(track: Track | undefined, note: { midi: number; detune: number }, project: Project) {
-  return {
-    midi: playedMidi(track, note.midi, project),
-    cents: track && !track.isDrum ? note.detune * (1 - track.tuneStrength) : 0,
-  };
-}
 
 export function PianoRoll() {
   const project = useStore((s) => s.project);
@@ -298,7 +279,7 @@ export function PianoRoll() {
         const x = beatToX(note.start);
         const nw = Math.max(2, note.duration * v.pxPerBeat);
         if (x + nw < 0 || x > w) continue;
-        const y = rowToY(rowOfMidi(track, playedMidi(track, note.midi, project)));
+        const y = rowToY(rowOfMidi(track, note.midi));
         ctx.fillRect(x, y + 1, nw, v.rowH - 2);
       }
     }
@@ -344,7 +325,7 @@ export function PianoRoll() {
         const x = beatToX(note.start);
         const nw = Math.max(3, note.duration * v.pxPerBeat);
         if (x + nw < 0 || x > w) continue;
-        const shown = playedMidi(activeTrack, note.midi, project);
+        const shown = note.midi;
         const y = rowToY(rowOfMidi(activeTrack, shown));
         if (y + v.rowH < 0 || y > h) continue;
 
@@ -379,14 +360,6 @@ export function PianoRoll() {
           ctx.moveTo(x + rad + 0.5, top + 1.5);
           ctx.lineTo(x + nw - rad - 0.5, top + 1.5);
           ctx.stroke();
-        }
-
-        // Out-of-tune marker: a tick showing which way the sung pitch leaned.
-        // Meaningless once the track is being corrected onto the scale.
-        if (!activeTrack.isDrum && !activeTrack.snapToScale && Math.abs(note.detune) > 18 && v.rowH >= 10) {
-          ctx.fillStyle = note.detune > 0 ? 'rgba(122, 28, 49, 0.95)' : 'rgba(0, 63, 81, 0.95)';
-          const th = Math.min(4, v.rowH / 3);
-          ctx.fillRect(x + 1, note.detune > 0 ? y + 1 : y + v.rowH - 1 - th, Math.min(nw - 2, 5), th);
         }
 
         if (v.rowH >= 15 && nw > 34 && !activeTrack.isDrum) {
@@ -674,7 +647,7 @@ export function PianoRoll() {
         const p = useStore.getState().project;
         const next = new Set<number>();
         for (const n of activeTrack.notes) {
-          if (n.start <= pos && pos < n.start + n.duration) next.add(playedMidi(activeTrack, n.midi, p));
+          if (n.start <= pos && pos < n.start + n.duration) next.add(n.midi);
         }
         let changed = next.size !== wasPlaying.size;
         if (!changed) for (const m of next) if (!wasPlaying.has(m)) { changed = true; break; }
@@ -795,7 +768,7 @@ export function PianoRoll() {
     // Reverse order so the topmost drawn note wins.
     for (let i = activeTrack.notes.length - 1; i >= 0; i--) {
       const n = activeTrack.notes[i];
-      if (rowOfMidi(activeTrack, playedMidi(activeTrack, n.midi, project)) !== row) continue;
+      if (rowOfMidi(activeTrack, n.midi) !== row) continue;
       const nw = Math.max(3, n.duration * v.pxPerBeat) / v.pxPerBeat;
       if (beat >= n.start && beat <= n.start + nw) return n;
     }
@@ -820,7 +793,7 @@ export function PianoRoll() {
       .filter((n) => {
         // A note fills exactly one row and its own beat span (with the 3px
         // floor the drawing uses), so the box takes what it visibly touches.
-        const row = rowOfMidi(activeTrack, playedMidi(activeTrack, n.midi, project));
+        const row = rowOfMidi(activeTrack, n.midi);
         if (row + 1 <= r0 || row >= r1) return false;
         const width = Math.max(3, n.duration * v.pxPerBeat) / v.pxPerBeat;
         return n.start + width > b0 && n.start < b1;
@@ -899,15 +872,15 @@ export function PianoRoll() {
       for (const n of activeTrack.notes) {
         if (ids.includes(n.id)) originals.set(n.id, { start: n.start, midi: n.midi, duration: n.duration });
       }
-      const audition = auditionOf(activeTrack, hit, project);
+      const previewMidi = hit.midi;
       dragRef.current = {
         kind: onHandle ? 'resize' : 'move',
         startX: x, startY: y, startBeat: xToBeat(x), startRow: yToRow(y),
         curX: x, curY: y, primaryId: hit.id, originals, additive: false,
-        scrollBeat0: v.scrollBeat, scrollRow0: v.scrollRow, lastPreviewMidi: audition.midi,
+        scrollBeat0: v.scrollBeat, scrollRow0: v.scrollRow, lastPreviewMidi: previewMidi,
         moved: false,
       };
-      engine.preview(activeTrack.id, audition.midi, audition.cents);
+      engine.preview(activeTrack.id, previewMidi);
       return;
     }
 
@@ -919,8 +892,7 @@ export function PianoRoll() {
       const free = tool === 'draw' && e.altKey;
       const raw = xToBeat(x);
       const beat = Math.max(0, snapBeats > 0 && !free ? Math.floor(raw / snapBeats) * snapBeats : raw);
-      // On an in-key track the note is stored where it will be drawn and heard.
-      const midi = playedMidi(activeTrack, midiOfRow(activeTrack, Math.floor(yToRow(y))), project);
+      const midi = midiOfRow(activeTrack, Math.floor(yToRow(y)));
       const dur = lastDrawDurRef.current ?? (snapBeats > 0 ? snapBeats : 1);
       const id = store.addNote(activeTrack.id, {
         start: beat, duration: dur, midi, velocity: 0.8, detune: 0,
@@ -1027,9 +999,7 @@ export function PianoRoll() {
         [...drag.originals.keys()],
         (n) => {
           const o = drag.originals.get(n.id)!;
-          // Rows are counted from where the note is drawn, which on an in-key
-          // track is its corrected pitch rather than its stored one.
-          const origRow = rowOfMidi(activeTrack, playedMidi(activeTrack, o.midi, project));
+          const origRow = rowOfMidi(activeTrack, o.midi);
           const newMidi = midiOfRow(activeTrack, Math.max(0, Math.min(rowCount(activeTrack) - 1, origRow + deltaRows)));
           return { start: Math.max(0, o.start + deltaBeats), midi: newMidi };
         },
@@ -1040,10 +1010,10 @@ export function PianoRoll() {
       const primary = useStore.getState().project.tracks
         .find((t) => t.id === activeTrackId)?.notes.find((n) => n.id === drag.primaryId);
       if (primary) {
-        const audition = auditionOf(activeTrack, primary, project);
-        if (audition.midi !== drag.lastPreviewMidi) {
-          drag.lastPreviewMidi = audition.midi;
-          engine.preview(activeTrackId, audition.midi, audition.cents);
+        const previewMidi = primary.midi;
+        if (previewMidi !== drag.lastPreviewMidi) {
+          drag.lastPreviewMidi = previewMidi;
+          engine.preview(activeTrackId, previewMidi);
         }
       }
       return;
@@ -1118,7 +1088,7 @@ export function PianoRoll() {
       return;
     }
     const beat = snapBeats > 0 ? Math.floor(xToBeat(x) / snapBeats) * snapBeats : xToBeat(x);
-    const midi = playedMidi(activeTrack, midiOfRow(activeTrack, Math.floor(yToRow(y))), project);
+    const midi = midiOfRow(activeTrack, Math.floor(yToRow(y)));
     const id = store.addNote(activeTrack.id, {
       start: Math.max(0, beat),
       duration: lastDrawDurRef.current ?? (snapBeats > 0 ? snapBeats : 1),

@@ -1,6 +1,6 @@
 import * as Tone from 'tone';
 import { createInstrument } from './instruments';
-import { midiToFreq, snapToScale, beatsToSeconds } from '../model/music';
+import { midiToFreq, beatsToSeconds } from '../model/music';
 import type { Project } from '../model/types';
 
 /** Encode an AudioBuffer as a 16-bit PCM WAV. */
@@ -92,16 +92,12 @@ export async function renderProject(
       instrument.output.connect(send);
 
       for (const note of track.notes) {
-        const playedMidi = track.snapToScale
-          ? snapToScale(note.midi, project.keyRoot, project.scale)
-          : note.midi;
-        const cents = note.detune * (1 - track.tuneStrength);
-        const freq = track.isDrum ? midiToFreq(playedMidi) : midiToFreq(playedMidi + cents / 100);
+        const freq = midiToFreq(note.midi);
         const time = beatsToSeconds(note.start, project.bpm);
         if (time < 0) continue;
         instrument.trigger(
           freq,
-          playedMidi,
+          note.midi,
           Math.max(0.02, beatsToSeconds(note.duration, project.bpm)),
           time,
           0.8,

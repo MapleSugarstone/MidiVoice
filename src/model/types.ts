@@ -59,9 +59,9 @@ export interface Track {
   notes: Note[];
   /** Drum tracks show a named-lane grid instead of a piano keyboard. */
   isDrum: boolean;
-  /** Autotune: snap playback pitch to the project scale. */
+  /** Legacy flag from when In key was a playback setting. Kept so old files parse. */
   snapToScale: boolean;
-  /** 0 = play exactly as sung, 1 = fully snapped to the integer MIDI note. */
+  /** Legacy blend amount; playback now always plays exact pitches. */
   tuneStrength: number;
   /** Draw the sung pitch line of this track's takes behind its notes. */
   showContour: boolean;
