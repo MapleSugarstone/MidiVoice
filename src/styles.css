@@ -365,8 +365,10 @@ button:disabled {
   min-height: 0;
 }
 
-/* The rail's gutter is reserved on the right so nothing sits underneath it. */
-.tracks .scrollarea-content {
+/* The rail's gutter is reserved on the right so nothing sits underneath it.
+   Child combinators keep these panel rules off the dropdown lists nested
+   inside the panels, which run their own ScrollArea. */
+.tracks > .scrollarea-view > .scrollarea-content {
   padding: 8px 21px 8px 8px;
   display: flex;
   flex-direction: column;
@@ -686,7 +688,7 @@ button:disabled {
   min-height: 0;
 }
 
-.tabbody .scrollarea-content {
+.tabbody > .scrollarea-view > .scrollarea-content {
   padding: 12px 27px 12px 14px;
 }
 
@@ -1545,7 +1547,7 @@ select {
     padding: 9px 10px;
   }
 
-  .tabbody .scrollarea-content {
+  .tabbody > .scrollarea-view > .scrollarea-content {
     padding: 10px 16px 12px 10px;
   }
 
@@ -1602,12 +1604,12 @@ select {
 
   /* Height comes from the cards; ScrollArea's own rail hides itself when
      there is no vertical overflow. */
-  .tracks .scrollarea-view {
+  .tracks > .scrollarea-view {
     overflow-x: auto;
     overflow-y: hidden;
   }
 
-  .tracks .scrollarea-content {
+  .tracks > .scrollarea-view > .scrollarea-content {
     flex-direction: row;
     align-items: stretch;
     width: max-content;

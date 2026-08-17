@@ -746,18 +746,39 @@ export function PianoRoll() {
     return () => cancelAnimationFrame(raf);
   }, [size, activeTrack]);
 
-  // Keep the playhead in view while playing.
+  // Keep the playhead in view while playing: when it runs off the edge the
+  // view glides a page ahead rather than teleporting. A drag or a stop
+  // cancels the glide so it never fights the user for the view.
+  const followAnimRef = useRef<number | null>(null);
   useEffect(() => {
     const id = window.setInterval(() => {
-      if (!engine.isPlaying) return;
+      if (!engine.isPlaying || followAnimRef.current !== null || dragRef.current) return;
       const v = viewRef.current;
       const pos = engine.positionBeats;
       const visible = size.w / v.pxPerBeat;
       if (pos < v.scrollBeat || pos > v.scrollBeat + visible * 0.92) {
-        setView((prev) => ({ ...prev, scrollBeat: Math.max(0, pos - visible * 0.15) }));
+        const from = v.scrollBeat;
+        const to = Math.max(0, pos - visible * 0.15);
+        const t0 = performance.now();
+        const duration = 280;
+        const step = (now: number) => {
+          if (dragRef.current || !engine.isPlaying) {
+            followAnimRef.current = null;
+            return;
+          }
+          const t = Math.min(1, (now - t0) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          setView((prev) => ({ ...prev, scrollBeat: from + (to - from) * eased }));
+          followAnimRef.current = t < 1 ? requestAnimationFrame(step) : null;
+        };
+        followAnimRef.current = requestAnimationFrame(step);
       }
     }, 120);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      if (followAnimRef.current !== null) cancelAnimationFrame(followAnimRef.current);
+      followAnimRef.current = null;
+    };
   }, [size.w]);
 
   // ---- interaction --------------------------------------------------------
