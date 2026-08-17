@@ -95,11 +95,17 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
       </div>
 
       <div className="group right">
-        <button className="ghost" onClick={() => store().undo()} disabled={past === 0} title="Undo (Ctrl+Z)">
-          ↶
+        <button className="ghost icon" onClick={() => store().undo()} disabled={past === 0} title="Undo (Ctrl+Z)">
+          <svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true">
+            <path d="M5 1.8 L1.8 5 L5 8.2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M1.8 5 H10.3 A3.6 3.6 0 0 1 10.3 12.2 H6.4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
         </button>
-        <button className="ghost" onClick={() => store().redo()} disabled={future === 0} title="Redo (Ctrl+Shift+Z)">
-          ↷
+        <button className="ghost icon" onClick={() => store().redo()} disabled={future === 0} title="Redo (Ctrl+Shift+Z)">
+          <svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true">
+            <path d="M11 1.8 L14.2 5 L11 8.2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M14.2 5 H5.7 A3.6 3.6 0 0 0 5.7 12.2 H9.6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
         </button>
         <button className="ghost m-hide" onClick={() => fileRef.current?.click()} title="Open a .fish, .mid, or .json file">
           Open

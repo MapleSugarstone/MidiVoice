@@ -175,6 +175,15 @@ button:disabled {
   font-size: 12px;
 }
 
+/* Icon-only pills: block the svg so no text baseline gap, pad to text height. */
+.ghost.icon {
+  padding: 7.5px 9px;
+}
+
+.ghost.icon svg {
+  display: block;
+}
+
 .ghost.danger:hover:not(:disabled) {
   border-color: var(--rec);
   color: #441825;
