@@ -579,7 +579,7 @@ export const useStore = create<AppState>((set, get) => ({
     const { selectedNoteIds, project } = get();
     const found = findNotes(project, selectedNoteIds);
     if (found.length === 0) {
-      set({ status: 'Select the notes you want to speed up first' });
+      set({ status: `Select the notes you want to ${factor < 1 ? 'speed up' : 'slow down'} first` });
       return;
     }
     const anchor = Math.min(...found.map(({ note }) => note.start));
@@ -591,7 +591,7 @@ export const useStore = create<AppState>((set, get) => ({
     });
     const percent = Math.round(Math.abs(1 / factor - 1) * 100);
     set({
-      status: `${found.length} note${found.length === 1 ? '' : 's'} now play ${percent}% ${
+      status: `${found.length} note${found.length === 1 ? '' : 's'} now play${found.length === 1 ? 's' : ''} ${percent}% ${
         factor < 1 ? 'faster' : 'slower'
       }`,
     });

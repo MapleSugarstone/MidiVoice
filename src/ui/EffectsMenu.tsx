@@ -111,7 +111,9 @@ export function EffectsMenu() {
           <Item label="Snap starts + lengths" disabled={none} onClick={() => run(() => store().quantizeSelection({ starts: true, lengths: true }))} />
           <Item label="Close gaps" keys="L" disabled={none} onClick={() => run(() => store().legatoSelection())} />
           <Item label={`Chop to ${grid}`} keys="Ctrl+Alt+C" disabled={none} onClick={() => run(() => store().chopSelection())} />
+          {/* Factors are rate changes: 1/0.8 = +25%, 1/(4/3) = −25%. */}
           <Item label="Speed up 25%" disabled={none} onClick={() => run(() => store().scaleSelectionTiming(0.8))} />
+          <Item label="Slow down 25%" disabled={none} onClick={() => run(() => store().scaleSelectionTiming(4 / 3))} />
 
           <div className="menu-label">Pitch</div>
           <Item label="Force into key" disabled={none || !!track?.isDrum} onClick={() => run(() => store().tuneSelectionToScale())} />
