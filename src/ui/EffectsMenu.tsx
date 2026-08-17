@@ -4,7 +4,7 @@ import { engine } from '../audio/engine';
 import { GRIDS, midiToName, drumLaneName, snapToScale } from '../model/music';
 
 /** Dropdown state that closes on outside pointerdown or Escape. */
-function useDropdown() {
+export function useDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -29,7 +29,7 @@ function useDropdown() {
   return { open, setOpen, ref };
 }
 
-function Item({
+export function Item({
   label, keys, disabled, danger, onClick,
 }: {
   label: string; keys?: string; disabled?: boolean; danger?: boolean; onClick: () => void;
@@ -134,10 +134,10 @@ export function EffectsMenu() {
   );
 }
 
-export function ShortcutsMenu() {
+export function ShortcutsMenu({ className = '' }: { className?: string }) {
   const { open, setOpen, ref } = useDropdown();
   return (
-    <div className="menuwrap" ref={ref}>
+    <div className={`menuwrap ${className}`} ref={ref}>
       <button
         className={`toggle ${open ? 'on' : ''}`}
         onClick={() => setOpen(!open)}

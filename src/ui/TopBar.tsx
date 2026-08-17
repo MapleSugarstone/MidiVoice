@@ -13,7 +13,7 @@ import {
 } from '../model/midiIO';
 import { renderProject } from '../audio/render';
 import { stopAll, togglePlay } from './transport';
-import { EffectsMenu, ShortcutsMenu } from './EffectsMenu';
+import { EffectsMenu, ShortcutsMenu, useDropdown, Item } from './EffectsMenu';
 import type { ScaleId } from '../model/types';
 import type { RecordPhase } from './useRecording';
 
@@ -101,14 +101,14 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         <button className="ghost" onClick={() => store().redo()} disabled={future === 0} title="Redo (Ctrl+Shift+Z)">
           ↷
         </button>
-        <button className="ghost" onClick={() => fileRef.current?.click()} title="Open a .fish, .mid, or .json file">
+        <button className="ghost m-hide" onClick={() => fileRef.current?.click()} title="Open a .fish, .mid, or .json file">
           Open
         </button>
-        <button className="ghost" onClick={() => exportMidiFile(project)} title="Export a standard MIDI file">
+        <button className="ghost m-hide" onClick={() => exportMidiFile(project)} title="Export a standard MIDI file">
           MIDI
         </button>
         <button
-          className="ghost"
+          className="ghost m-hide"
           onClick={() => {
             void exportFishFile(project).then(() => store().setStatus(`Saved ${safeFilename(project.name)}.fish`));
           }}
@@ -116,10 +116,19 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         >
           Save
         </button>
-        <button className="ghost" onClick={handleRender} disabled={rendering} title="Bounce the song to a .wav">
+        <button className="ghost m-hide" onClick={handleRender} disabled={rendering} title="Bounce the song to a .wav">
           {rendering ? '…' : 'WAV'}
         </button>
-        <ShortcutsMenu />
+        <ShortcutsMenu className="m-hide" />
+        <FileMenu
+          rendering={rendering}
+          onOpen={() => fileRef.current?.click()}
+          onSave={() => {
+            void exportFishFile(project).then(() => store().setStatus(`Saved ${safeFilename(project.name)}.fish`));
+          }}
+          onMidi={() => exportMidiFile(project)}
+          onWav={() => void handleRender()}
+        />
         <input ref={fileRef} type="file" accept=".mid,.midi,.json,.fish" hidden onChange={handleImport} />
       </div>
       </div>
@@ -173,7 +182,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         </div>
       </div>
 
-      <div className="group">
+      <div className="group m-hide">
         <label className="field">
           <span>Tempo</span>
           <NumberField
@@ -200,7 +209,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         </label>
       </div>
 
-      <div className="group">
+      <div className="group m-hide">
         <label className="field">
           <span>Key</span>
           <select
@@ -229,7 +238,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         </label>
       </div>
 
-      <div className="group">
+      <div className="group tools">
         <button
           className={`toggle ${tool === 'select' ? 'on' : ''}`}
           onClick={() => store().setTool('select')}
@@ -244,7 +253,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         >
           ✎ Draw
         </button>
-        <label className="field">
+        <label className="field m-hide">
           <span>Snap</span>
           <select value={gridIndex} onChange={(e) => store().setSetting('gridIndex', Number(e.target.value))}>
             {GRIDS.map((g, i) => (
@@ -255,8 +264,9 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
           </select>
         </label>
         <EffectsMenu />
+        <SongMenu />
         <button
-          className={`toggle ${metronome ? 'on' : ''}`}
+          className={`toggle m-hide ${metronome ? 'on' : ''}`}
           onClick={() => {
             const next = !metronome;
             store().setSetting('metronome', next);
@@ -267,7 +277,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
           Click
         </button>
         <button
-          className={`toggle ${project.loopEnabled ? 'on' : ''}`}
+          className={`toggle m-hide ${project.loopEnabled ? 'on' : ''}`}
           onClick={() => {
             store().toggleLoop();
             engine.setProjectLoop(store().project);
@@ -277,14 +287,14 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
           ⟳ Loop
         </button>
         {project.loopEnabled && project.loopEndBeat > project.loopStartBeat && (
-          <span className="loop-range" title="Drag across the ruler to move the loop">
+          <span className="loop-range m-hide" title="Drag across the ruler to move the loop">
             bars {barLabel(project.loopStartBeat, project.beatsPerBar)}–
             {barLabel(project.loopEndBeat, project.beatsPerBar)}
           </span>
         )}
       </div>
 
-      <div className="group">
+      <div className="group m-hide">
         <label className="field slider" title="Master volume">
           <span>Vol</span>
           <input
@@ -422,6 +432,182 @@ export function NumberField({
         </button>
       </span>
     </span>
+  );
+}
+
+/** Phone-only stand-in for the file button row (see the m-only/m-hide pair in styles.css). */
+function FileMenu({
+  rendering, onOpen, onSave, onMidi, onWav,
+}: {
+  rendering: boolean; onOpen: () => void; onSave: () => void; onMidi: () => void; onWav: () => void;
+}) {
+  const { open, setOpen, ref } = useDropdown();
+  const run = (fn: () => void) => {
+    fn();
+    setOpen(false);
+  };
+  return (
+    <div className="menuwrap m-only" ref={ref}>
+      <button className={`toggle ${open ? 'on' : ''}`} onClick={() => setOpen(!open)} title="Open, save, export">
+        File ▾
+      </button>
+      {open && (
+        <div className="menu right" role="menu">
+          <Item label="Open…" onClick={() => run(onOpen)} />
+          <Item label="Save project (.fish)" onClick={() => run(onSave)} />
+          <Item label="Export MIDI (.mid)" onClick={() => run(onMidi)} />
+          <Item label={rendering ? 'Exporting…' : 'Export audio (.wav)'} disabled={rendering} onClick={() => run(onWav)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Phone-only stand-in for the tempo, key, snap, and level controls. */
+function SongMenu() {
+  const { open, setOpen, ref } = useDropdown();
+  const project = useStore((s) => s.project);
+  const gridIndex = useStore((s) => s.gridIndex);
+  const metronome = useStore((s) => s.metronome);
+  const metronomeVolume = useStore((s) => s.metronomeVolume);
+  const masterVolume = useStore((s) => s.masterVolume);
+  const reverbAmount = useStore((s) => s.reverbAmount);
+  const store = useStore.getState;
+
+  return (
+    <div className="menuwrap m-only" ref={ref}>
+      <button className={`toggle ${open ? 'on' : ''}`} onClick={() => setOpen(!open)} title="Tempo, key, snap, and levels">
+        Song ▾
+      </button>
+      {open && (
+        <div className="menu song-menu" role="menu">
+          <div className="menu-label">Song</div>
+          <div className="menu-row">
+            <span className="menu-row-label">Tempo</span>
+            <NumberField
+              min={20}
+              max={300}
+              value={project.bpm}
+              onCommit={(bpm) => {
+                store().setProjectMeta({ bpm });
+                engine.setBpm(bpm);
+              }}
+            />
+          </div>
+          <div className="menu-row">
+            <span className="menu-row-label">Beats/bar</span>
+            <NumberField
+              min={1}
+              max={16}
+              value={project.beatsPerBar}
+              onCommit={(n) => {
+                store().setProjectMeta({ beatsPerBar: n });
+                engine.setBeatsPerBar(n);
+              }}
+            />
+          </div>
+          <div className="menu-row">
+            <span className="menu-row-label">Key</span>
+            <select
+              value={project.keyRoot}
+              onChange={(e) => store().setProjectMeta({ keyRoot: Number(e.target.value) })}
+            >
+              {NOTE_NAMES.map((n, i) => (
+                <option key={n} value={i}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            <select
+              value={project.scale}
+              onChange={(e) => store().setProjectMeta({ scale: e.target.value as ScaleId })}
+            >
+              {Object.entries(SCALES).map(([id, s]) => (
+                <option key={id} value={id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="menu-row">
+            <span className="menu-row-label">Snap</span>
+            <select value={gridIndex} onChange={(e) => store().setSetting('gridIndex', Number(e.target.value))}>
+              {GRIDS.map((g, i) => (
+                <option key={g.label} value={i}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+            <button
+              className={`toggle ${project.loopEnabled ? 'on' : ''}`}
+              onClick={() => {
+                store().toggleLoop();
+                engine.setProjectLoop(store().project);
+              }}
+              title="Loop the highlighted ruler section, or the whole song if none is highlighted"
+            >
+              ⟳ Loop
+            </button>
+          </div>
+          <div className="menu-label">Levels</div>
+          <div className="menu-row">
+            <span className="menu-row-label">Volume</span>
+            <input
+              type="range"
+              min={0}
+              max={1.2}
+              step={0.01}
+              value={masterVolume}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                store().setSetting('masterVolume', v);
+                engine.setMasterVolume(v);
+              }}
+            />
+          </div>
+          <div className="menu-row">
+            <span className="menu-row-label">Reverb</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={reverbAmount}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                store().setSetting('reverbAmount', v);
+                engine.setReverbAmount(v);
+              }}
+            />
+          </div>
+          <div className="menu-row">
+            <button
+              className={`toggle ${metronome ? 'on' : ''}`}
+              onClick={() => {
+                const next = !metronome;
+                store().setSetting('metronome', next);
+                engine.metronomeEnabled = next;
+              }}
+              title="Metronome click"
+            >
+              Click
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={metronomeVolume}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                store().setSetting('metronomeVolume', v);
+                engine.setMetronomeVolume(v);
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
