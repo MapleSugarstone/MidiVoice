@@ -151,6 +151,66 @@ settings and **Re-detect** rather than singing it again.
 Pitch bend is not exported, so a MIDI file carries the corrected notes rather
 than your microtonal drift. The WAV bounce does keep it.
 
+## Singing straight into a DAW
+
+The `plugin/` folder builds MidiVoice as a VST3 and CLAP plugin. Put it on a
+track, and the audio the track hears comes back out as live MIDI notes in the
+host, with nothing else to install and no virtual MIDI cable. It runs the same
+YIN pitch tracker as the app, wears the same look, and works in any DAW that
+loads VST3 or CLAP.
+
+In Reaper, one track does it:
+
+1. Set the track input to your mic's stereo pair (Input 1 / Input 2). If no
+   mic is listed, set Options > Preferences > Audio > Device to WASAPI with
+   your microphone as the input device.
+2. Layer the track's FX chain in order: MidiVoice first, then your synth
+   after it. Arm the track and turn on input monitoring, and the synth plays
+   what you sing.
+3. Right-click the track's record-arm button and set Record: output >
+   Record: output (MIDI). Recording now leaves an editable MIDI item instead
+   of audio.
+
+The plugin window has Gate, New-note distance, Melody or Bass range, octave
+shift, an optional pitch-bend stream, and an audio passthrough toggle.
+
+On Windows, download
+[midivoice-plugin-windows.zip](https://maplesugarstone.github.io/MidiVoice/midivoice-plugin-windows.zip)
+(also in `public/` here), unzip it, and follow the INSTALL.txt inside: copy
+`MidiVoice.vst3` into `C:\Program Files\Common Files\VST3`, then rescan
+plugins in your DAW.
+
+To build it yourself instead, install [Rust](https://rustup.rs) and run:
+
+```bash
+cd plugin && cargo xtask bundle midivoice_plugin --release
+```
+
+On Windows the build needs a linker toolchain: either Visual Studio's C++
+tools for the default MSVC target, or the `stable-x86_64-pc-windows-gnu`
+toolchain plus MinGW binutils (`pacman -S mingw-w64-x86_64-binutils` in MSYS2,
+with `C:\msys64\mingw64\bin` on PATH) because the Windows API crates generate
+import libraries through `dlltool`.
+
+The bundle lands in `plugin/target/bundled/`. Copy `MidiVoice.vst3` to
+`C:\Program Files\Common Files\VST3` on Windows,
+`/Library/Audio/Plug-Ins/VST3` on macOS, or `~/.vst3` on Linux. The
+`.github/workflows/plugin.yml` workflow builds all three platforms and
+attaches zips to a GitHub release on any `plugin-v*` tag.
+
+Live detection commits about 50 ms into each note and cannot revise itself
+afterwards, so a recorded take in the app will always transcribe better, and
+live notes land slightly late on the timeline. The plugin is for playing a
+synth with your voice and sketching parts straight into a project. Record in
+the app when you want corrected timing and tidy notes.
+
+There is also a no-install fallback,
+[midivoice-daw-bridge.html](https://maplesugarstone.github.io/MidiVoice/midivoice-daw-bridge.html),
+a self-contained page that streams Web MIDI into a virtual port such as
+[loopMIDI](https://www.tobias-erichsen.de/software/loopmidi.html). The plugin
+is the better path when you can use it, since the bridge needs that extra
+port and a Chromium browser.
+
 ## How the note detection works
 
 Melodic takes go through two detectors that split the job. Spotify's Basic

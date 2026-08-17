@@ -18,6 +18,9 @@ claude-notes/
 # Skill and tool scratch
 .bwp/
 
+# Plugin build output
+plugin/target/
+
 # Dev-only test harness
 dsptest.html
 src/devtest/
