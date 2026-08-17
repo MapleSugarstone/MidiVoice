@@ -33,7 +33,7 @@ export function makeTrack(index: number, partial: Partial<Track> = {}): Track {
   return {
     id: newId('t'),
     name: partial.name ?? (isDrum ? 'Drums' : `Track ${index + 1}`),
-    instrument: partial.instrument ?? (isDrum ? 'drumKit' : 'grandPiano'),
+    instrument: partial.instrument ?? (isDrum ? 'drumKit' : 'aeroKeys'),
     volume: partial.volume ?? -3,
     pan: partial.pan ?? 0,
     muted: false,

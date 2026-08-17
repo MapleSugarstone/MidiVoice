@@ -18,6 +18,13 @@ export interface Note {
 }
 
 export type InstrumentId =
+  | 'aeroKeys'
+  | 'aeroPad'
+  | 'bubblePluck'
+  | 'glassChime'
+  | 'skySaw'
+  | 'airFlute'
+  | 'waterDrop'
   | 'grandPiano'
   | 'electricPiano'
   | 'organ'

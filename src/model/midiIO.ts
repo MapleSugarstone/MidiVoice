@@ -10,6 +10,13 @@ export const FIXED_VELOCITY = 0.8;
 
 /** General MIDI program numbers so exported files open with sensible sounds. */
 const GM_PROGRAM: Record<InstrumentId, number> = {
+  aeroKeys: 5, // Electric Piano 2 (the glassy DX one)
+  bubblePluck: 102, // FX 7 (echoes)
+  glassChime: 98, // FX 3 (crystal)
+  aeroPad: 88, // Pad 1 (new age)
+  skySaw: 90, // Pad 3 (polysynth)
+  airFlute: 78, // Whistle
+  waterDrop: 96, // FX 1 (rain)
   grandPiano: 0,
   electricPiano: 4,
   organ: 16,
@@ -34,6 +41,7 @@ const GM_PROGRAM: Record<InstrumentId, number> = {
 function instrumentFromProgram(program: number, isDrum: boolean): InstrumentId {
   if (isDrum) return 'drumKit';
   if (program <= 3) return 'grandPiano';
+  if (program === 5) return 'aeroKeys';
   if (program <= 7) return 'electricPiano';
   if (program <= 15) return 'marimba';
   if (program <= 23) return 'organ';
@@ -43,8 +51,14 @@ function instrumentFromProgram(program: number, isDrum: boolean): InstrumentId {
   if (program <= 47) return 'strings';
   if (program <= 55) return 'choir';
   if (program <= 63) return 'brass';
-  if (program <= 79) return 'strings';
+  if (program <= 71) return 'strings';
+  if (program <= 79) return 'airFlute';
   if (program <= 87) return 'sawLead';
+  if (program === 88) return 'aeroPad';
+  if (program <= 95) return 'warmPad';
+  if (program === 96) return 'waterDrop';
+  if (program === 102) return 'bubblePluck';
+  if (program <= 103) return 'glassChime';
   return 'warmPad';
 }
 

@@ -8,6 +8,13 @@ export interface InstrumentDef {
 }
 
 export const INSTRUMENTS: InstrumentDef[] = [
+  { id: 'aeroKeys', label: 'Aero Keys', group: 'Frutiger Aero' },
+  { id: 'bubblePluck', label: 'Bubble Pluck', group: 'Frutiger Aero' },
+  { id: 'glassChime', label: 'Glass Chimes', group: 'Frutiger Aero' },
+  { id: 'aeroPad', label: 'Aero Pad', group: 'Frutiger Aero' },
+  { id: 'skySaw', label: 'Sky Saw', group: 'Frutiger Aero' },
+  { id: 'airFlute', label: 'Air Flute', group: 'Frutiger Aero' },
+  { id: 'waterDrop', label: 'Water Drops', group: 'Frutiger Aero' },
   { id: 'grandPiano', label: 'Grand Piano', group: 'Keys' },
   { id: 'electricPiano', label: 'Electric Piano', group: 'Keys' },
   { id: 'organ', label: 'Organ', group: 'Keys' },
@@ -43,28 +50,50 @@ export interface PlayableInstrument {
 
 /**
  * Round-robin pool of monophonic voices. Needed for instruments Tone's
- * PolySynth can't wrap (PluckSynth isn't a Monophonic subclass).
+ * PolySynth can't wrap (PluckSynth isn't a Monophonic subclass), and for
+ * presets that automate per-voice signals on each hit (see `waterDrop`).
  */
-class VoicePool implements PlayableInstrument {
-  private voices: Tone.PluckSynth[] = [];
+class VoicePool<V extends Tone.PluckSynth | Tone.Synth> implements PlayableInstrument {
+  private voices: V[] = [];
   private idx = 0;
-  output: Tone.Gain;
+  private bus: Tone.Gain;
+  private chain: Tone.ToneAudioNode[];
+  output: Tone.ToneAudioNode;
   reverbSend: number;
 
-  constructor(factory: () => Tone.PluckSynth, count: number, reverbSend: number) {
-    this.output = new Tone.Gain(1);
+  constructor(
+    factory: () => V,
+    count: number,
+    reverbSend: number,
+    chain: Tone.ToneAudioNode[] = [],
+    private beforeTrigger?: (voice: V, timeSec: number) => void,
+  ) {
+    this.bus = new Tone.Gain(1);
     this.reverbSend = reverbSend;
     for (let i = 0; i < count; i++) {
       const v = factory();
-      v.connect(this.output);
+      v.connect(this.bus);
       this.voices.push(v);
     }
+    this.chain = chain;
+    let node: Tone.ToneAudioNode = this.bus;
+    for (const fx of chain) {
+      node.connect(fx);
+      node = fx;
+    }
+    this.output = node;
   }
 
   trigger(note: number, _midi: number, duration: Tone.Unit.Time, time: Tone.Unit.Time, velocity: number) {
     const v = this.voices[this.idx % this.voices.length];
     this.idx++;
-    v.triggerAttackRelease(note, duration, time, velocity);
+    if (this.beforeTrigger) {
+      const t = typeof time === 'number' ? time : Tone.Time(time).toSeconds();
+      this.beforeTrigger(v, t);
+      v.triggerAttackRelease(note, duration, t, velocity);
+    } else {
+      v.triggerAttackRelease(note, duration, time, velocity);
+    }
   }
 
   releaseAll() {
@@ -79,17 +108,20 @@ class VoicePool implements PlayableInstrument {
 
   dispose() {
     for (const v of this.voices) v.dispose();
-    this.output.dispose();
+    for (const fx of this.chain) fx.dispose();
+    this.bus.dispose();
   }
 }
 
 class PolyInstrument implements PlayableInstrument {
   private synth: Tone.PolySynth<any>;
+  private chain: Tone.ToneAudioNode[];
   output: Tone.ToneAudioNode;
   reverbSend: number;
 
   constructor(synth: Tone.PolySynth<any>, reverbSend: number, chain: Tone.ToneAudioNode[] = []) {
     this.synth = synth;
+    this.chain = chain;
     this.reverbSend = reverbSend;
     if (chain.length) {
       let node: Tone.ToneAudioNode = synth;
@@ -121,6 +153,7 @@ class PolyInstrument implements PlayableInstrument {
 
   dispose() {
     this.synth.dispose();
+    for (const fx of this.chain) fx.dispose();
   }
 }
 
@@ -280,6 +313,13 @@ class DrumKit implements PlayableInstrument {
 
 /** Output trim per preset in dB, measured offline against a common 0.22 peak so changing instrument does not change how loud a part is (the raw patches spanned 32 dB). */
 const TRIM_DB: Record<InstrumentId, number> = {
+  aeroKeys: 4.2,
+  aeroPad: -0.4,
+  bubblePluck: 5.7,
+  glassChime: 7.9,
+  skySaw: 5.3,
+  airFlute: -0.9,
+  waterDrop: -3.5,
   grandPiano: 6.7,
   electricPiano: 6.1,
   organ: 0.9,
@@ -350,6 +390,120 @@ export function createInstrument(id: InstrumentId): PlayableInstrument {
 
 function createRawInstrument(id: InstrumentId): PlayableInstrument {
   switch (id) {
+    // The Frutiger Aero set bakes chorus and echo into the preset. Delay times
+    // are seconds rather than note values because the offline bounce transport
+    // does not follow project BPM, and the two must sound identical.
+
+    case 'aeroKeys':
+      return new PolyInstrument(
+        new Tone.PolySynth(Tone.FMSynth, {
+          harmonicity: 5,
+          modulationIndex: 6,
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.003, decay: 1.6, sustain: 0.15, release: 1.0 },
+          modulation: { type: 'sine' },
+          modulationEnvelope: { attack: 0.002, decay: 0.25, sustain: 0, release: 0.2 },
+          volume: -8,
+        }),
+        0.35,
+        [
+          new Tone.Chorus({ frequency: 1.1, delayTime: 3.5, depth: 0.5, wet: 0.5 }).start(),
+          new Tone.FeedbackDelay({ delayTime: 0.29, feedback: 0.3, wet: 0.18 }),
+        ],
+      );
+
+    case 'bubblePluck':
+      return new PolyInstrument(
+        new Tone.PolySynth(Tone.FMSynth, {
+          harmonicity: 1,
+          modulationIndex: 3,
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.002, decay: 0.5, sustain: 0.1, release: 0.4 },
+          modulation: { type: 'sine' },
+          modulationEnvelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.05 },
+          volume: -6,
+        }),
+        0.3,
+        [new Tone.PingPongDelay({ delayTime: 0.26, feedback: 0.4, wet: 0.28 })],
+      );
+
+    case 'glassChime':
+      return new PolyInstrument(
+        new Tone.PolySynth(Tone.FMSynth, {
+          harmonicity: 7.07,
+          modulationIndex: 7,
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.001, decay: 2.4, sustain: 0, release: 2.6 },
+          modulation: { type: 'sine' },
+          modulationEnvelope: { attack: 0.001, decay: 1.1, sustain: 0, release: 0.5 },
+          volume: -12,
+        }),
+        0.5,
+        [new Tone.Chorus({ frequency: 0.4, delayTime: 4, depth: 0.5, wet: 0.5 }).start()],
+      );
+
+    case 'aeroPad':
+      return new PolyInstrument(
+        new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'fattriangle', count: 3, spread: 28 } as any,
+          envelope: { attack: 0.5, decay: 0.7, sustain: 0.85, release: 2.4 },
+          volume: -12,
+        }),
+        0.6,
+        [
+          new Tone.Filter(2400, 'lowpass'),
+          new Tone.Chorus({ frequency: 0.5, delayTime: 5, depth: 0.7, wet: 0.6 }).start(),
+        ],
+      );
+
+    case 'skySaw':
+      return new PolyInstrument(
+        new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'fatsawtooth', count: 4, spread: 38 } as any,
+          envelope: { attack: 0.045, decay: 0.25, sustain: 0.75, release: 0.6 },
+          volume: -18,
+        }),
+        0.32,
+        [
+          new Tone.Filter(3600, 'lowpass'),
+          new Tone.Chorus({ frequency: 0.8, delayTime: 3, depth: 0.5, wet: 0.5 }).start(),
+        ],
+      );
+
+    case 'airFlute':
+      return new PolyInstrument(
+        new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'triangle' },
+          envelope: { attack: 0.07, decay: 0.2, sustain: 0.7, release: 0.35 },
+          volume: -10,
+        }),
+        0.38,
+        [
+          new Tone.Vibrato(5.2, 0.08),
+          new Tone.Filter(2800, 'lowpass'),
+          new Tone.FeedbackDelay({ delayTime: 0.32, feedback: 0.28, wet: 0.15 }),
+        ],
+      );
+
+    case 'waterDrop':
+      return new VoicePool(
+        () =>
+          new Tone.Synth({
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.004, decay: 0.32, sustain: 0, release: 0.28 },
+            volume: -6,
+          }),
+        8,
+        0.5,
+        [new Tone.FeedbackDelay({ delayTime: 0.34, feedback: 0.45, wet: 0.35 })],
+        (v, t) => {
+          // The droplet scoops up a fifth into the note over its first 80 ms.
+          v.detune.cancelScheduledValues(t);
+          v.detune.setValueAtTime(-700, t);
+          v.detune.linearRampToValueAtTime(0, t + 0.08);
+        },
+      );
+
     case 'grandPiano':
       return new PolyInstrument(
         new Tone.PolySynth(Tone.FMSynth, {
