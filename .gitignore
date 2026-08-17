@@ -1,0 +1,23 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+.vite/
+
+# Scratch recordings, bounces and exported projects
+Test Files/
+*.wav
+*.mid
+*.midivoice.json
+
+# Claude working files
+.claude/
+CLAUDE.md
+claude-notes/
+
+# Skill and tool scratch
+.bwp/
+
+# Dev-only test harness
+dsptest.html
+src/devtest/

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>MidiVoice - hum to midi converter</title>
+    <meta name="description" content="Hum and doot into the mic for MIDI tunes!" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MidiVoice" />
+    <meta property="og:description" content="Hum and doot into the mic for MIDI tunes!" />
+    <meta property="og:url" content="https://maplesugarstone.github.io/midivoice/" />
+    <!-- SVG preview first for clients that can use it; PNG fallback for the rest. -->
+    <meta property="og:image" content="https://maplesugarstone.github.io/midivoice/preview.svg" />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image" content="https://maplesugarstone.github.io/midivoice/preview.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="2400" />
+    <meta property="og:image:height" content="1260" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MidiVoice" />
+    <meta name="twitter:description" content="Hum and doot into the mic for MIDI tunes!" />
+    <meta name="twitter:image" content="https://maplesugarstone.github.io/midivoice/preview.png" />
+    <script>
+      // Opening this file directly gives a blank page: the app is TypeScript
+      // that a server has to compile, and the microphone needs a secure
+      // context, which file:// is not. Explain instead of showing nothing.
+      if (location.protocol !== 'http:' && location.protocol !== 'https:') {
+        var showHint = function () {
+          document.body.style.background = '#daf0ff';
+          document.body.innerHTML =
+            '<div style="max-width:38rem;margin:12vh auto;padding:0 1.5rem;' +
+            'font:15px/1.6 Optima, Candara, Noto Sans, source-sans-pro, sans-serif;color:#0c1820">' +
+            '<h1 style="font-size:20px">MidiVoice needs to run from a server</h1>' +
+            '<p>You opened this file directly. That cannot work: the app is TypeScript that has to be ' +
+            'compiled on the fly, and microphone access requires a secure context, which ' +
+            '<code>file://</code> is not.</p>' +
+            '<p>In a terminal, from the project folder:</p>' +
+            '<pre style="background:#ebf6fd;border:1px solid #adc6d7;border-radius:12px;' +
+            'padding:12px 14px;overflow:auto">npm run dev</pre>' +
+            '<p>Then open <a href="http://localhost:5273" style="color:#006686">http://localhost:5273</a>.</p>' +
+            '<p style="color:#38637a;font-size:13px">Deployed to GitHub Pages it works normally: ' +
+            'Pages serves over https, which satisfies both requirements.</p></div>';
+        };
+        if (document.body) showHint();
+        else document.addEventListener('DOMContentLoaded', showHint);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

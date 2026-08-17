@@ -1,0 +1,1156 @@
+:root {
+  --bg: #daf0ff;
+  --panel: #e7f4fd;
+  --panel-2: #ebf6fd;
+  --line: #adc6d7;
+  --text: #0c1820;
+  --muted: #38637a;
+  --accent: #006686;
+  --rec: #c64462;
+  --ok: #008656;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.45 Optima, Candara, Noto Sans, source-sans-pro, sans-serif;
+  overflow: hidden;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+}
+
+/* ------------------------------------------------------------- top bar --- */
+
+.topbar {
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Two deliberate rows: song + file actions on top, session controls below. */
+.topbar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 0;
+  flex-wrap: wrap;
+}
+
+.topbar-row:first-child {
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(173, 198, 215, 0.45);
+}
+
+.topbar-row > .group:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo {
+  color: var(--rec);
+  font-size: 18px;
+}
+
+.songname {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 4px 6px;
+  width: 170px;
+  font-weight: 600;
+}
+
+.songname:hover,
+.songname:focus {
+  border-color: var(--line);
+  background: var(--panel-2);
+  outline: none;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.group.right {
+  margin-left: auto;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.field > span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field input[type='number'] {
+  width: 68px;
+}
+
+.field.slider input[type='range'] {
+  width: 74px;
+}
+
+input[type='number'],
+input[type='text'],
+select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 4px 6px;
+}
+
+input[type='number']:focus,
+select:focus {
+  outline: 1px solid var(--accent);
+}
+
+input[type='range'] {
+  accent-color: var(--accent);
+  height: 18px;
+}
+
+button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+button:hover:not(:disabled) {
+  background: #b7cbda;
+  border-color: #9baebc;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ghost.sm,
+.mini {
+  padding: 3px 7px;
+  font-size: 12px;
+}
+
+.ghost.danger:hover:not(:disabled) {
+  border-color: var(--rec);
+  color: #441825;
+}
+
+.toggle.on {
+  background: #7ec0df;
+  border-color: var(--accent);
+  color: #0d1921;
+}
+
+.loop-range {
+  font: 11px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.transport {
+  gap: 6px;
+}
+
+.transport-btn {
+  width: 36px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.transport-btn svg {
+  display: block;
+}
+
+.transport-btn.active {
+  background: #7ec0df;
+  border-color: var(--accent);
+}
+
+.transport-btn.record {
+  color: var(--rec);
+}
+
+.transport-btn.record.armed {
+  background: var(--rec);
+  color: #01070e;
+  border-color: var(--rec);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.position {
+  font: 13px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, 'SF Mono', Menlo, monospace;
+  background: #e4f4ff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 5px 9px;
+  min-width: 86px;
+  text-align: center;
+  color: var(--accent);
+}
+
+/* -------------------------------------------------------------- layout --- */
+
+.middle {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------- custom scrollbar --- */
+
+/* The browser's own scrollbar is hidden and replaced by ScrollArea's rail,
+   because how much of a native one can be styled differs per engine. */
+.scrollarea {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scrollarea-view {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.scrollarea-view::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.scrollarea-rail {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  right: 4px;
+  width: 13px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(24, 84, 120, 0.17), rgba(255, 255, 255, 0.5) 55%, rgba(24, 84, 120, 0.08));
+  box-shadow: inset 0 1px 3px rgba(20, 70, 110, 0.26), inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+  touch-action: none;
+  opacity: 1;
+  transition: opacity 140ms ease;
+}
+
+.scrollarea-rail.idle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scrollarea-thumb {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  right: 2px;
+  border: 1px solid rgba(48, 105, 140, 0.55);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f6fcff, #bfe1f3 38%, #7bb2d1 56%, #4d8fb4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 1px 2px rgba(20, 70, 110, 0.35);
+}
+
+.scrollarea-rail:hover .scrollarea-thumb {
+  background: linear-gradient(180deg, #ffffff, #d2ecfa 38%, #8cc2de 56%, #559dc4);
+}
+
+.scrollarea-rail.dragging .scrollarea-thumb {
+  background: linear-gradient(180deg, #9cc8e0, #7bb2d1 45%, #3f82a8);
+  box-shadow: inset 0 1px 3px rgba(10, 45, 70, 0.4);
+}
+
+/* ---------------------------------------------------------- track list --- */
+
+.tracklist {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-head h2 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.row.wrap {
+  flex-wrap: wrap;
+}
+
+.tracks {
+  flex: 1;
+  min-height: 0;
+}
+
+/* The rail's gutter is reserved on the right so nothing sits underneath it. */
+.tracks .scrollarea-content {
+  padding: 8px 21px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.track {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid;
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.track.active {
+  background: #bdd2e0;
+  border-color: #96a9b6;
+  box-shadow: inset 0 0 0 1px rgba(0, 102, 134, 0.35);
+}
+
+.track-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Deliberately narrow: the empty space beside it is what you click to pick the track. */
+.track-name {
+  flex: 0 1 96px;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 4px;
+  font-weight: 600;
+}
+
+.track-name:hover,
+.track-name:focus {
+  background: #d5ebfb;
+  border-color: var(--line);
+  outline: none;
+}
+
+.notecount {
+  font: 11px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+  color: var(--muted);
+}
+
+.track-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.x {
+  padding: 0 4px;
+  line-height: 1.2;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+}
+
+.x:hover:not(:disabled) {
+  color: var(--rec);
+  background: transparent;
+}
+
+.x:disabled {
+  opacity: 0.28;
+}
+
+.empty-tracks {
+  margin: 4px 2px;
+}
+
+.instrument {
+  width: 100%;
+}
+
+.track-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.track-controls .chips {
+  display: flex;
+  gap: 6px;
+}
+
+.mix-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 30px;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.mix-row input {
+  width: 100%;
+  min-width: 0;
+}
+
+.mix-row em {
+  font: 10px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+  font-style: normal;
+  text-align: right;
+}
+
+.chip {
+  width: 24px;
+  padding: 2px 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chip.on-mute {
+  background: #dca5b3;
+  border-color: var(--rec);
+  color: #0f1b23;
+}
+
+.chip.on-solo {
+  background: #b6997d;
+  border-color: #613200;
+  color: #131000;
+}
+
+.chip.on-contour {
+  background: #b8d6c4;
+  border-color: #2c6a4a;
+  color: #06231a;
+}
+
+.track-tune {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.track-tune label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tune-strength input {
+  flex: 1;
+}
+
+/* ---------------------------------------------------------- piano roll --- */
+
+.pianoroll {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  grid-template-rows: 30px minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+  background: #d3e8f7;
+}
+
+.pr-corner {
+  grid-area: 1 / 1;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.pr-ruler {
+  grid-area: 1 / 2;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.pr-keys {
+  grid-area: 2 / 1;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.pr-grid {
+  grid-area: 2 / 2;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.pr-grid canvas,
+.pr-keys canvas,
+.pr-ruler canvas {
+  display: block;
+  position: absolute;
+}
+
+.pr-grid canvas.overlay {
+  pointer-events: none;
+}
+
+/* With no track there is nowhere for a note to go, so the whole roll goes cold. */
+.pianoroll.no-track .pr-keys,
+.pianoroll.no-track .pr-grid,
+.pianoroll.no-track .pr-ruler,
+.pianoroll.no-track .pr-corner {
+  filter: grayscale(1) contrast(0.55) opacity(0.5);
+  pointer-events: none;
+}
+
+.pr-empty {
+  grid-area: 2 / 2;
+  place-self: center;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 4px 16px rgba(30, 90, 140, 0.18);
+  color: var(--muted);
+}
+
+.pr-empty p {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* -------------------------------------------------------- bottom panel --- */
+
+.bottom {
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  max-height: 42vh;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 9px 14px;
+  color: var(--muted);
+}
+
+.tab:hover {
+  background: transparent;
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.status {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  padding-right: 8px;
+  max-width: 46vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabbody {
+  min-height: 0;
+}
+
+.tabbody .scrollarea-content {
+  padding: 12px 27px 12px 14px;
+}
+
+.pane {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 22px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.col.narrow {
+  border-left: 1px solid var(--line);
+  padding-left: 18px;
+}
+
+.col h3 {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 68ch;
+}
+
+.hint.small {
+  font-size: 11px;
+}
+
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font: 11px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+}
+
+.error {
+  margin: 0;
+  color: #5a1b2e;
+  font-size: 12px;
+}
+
+.ok {
+  margin: 0;
+  color: var(--ok);
+  font-size: 12px;
+}
+
+.bigrecord {
+  background: var(--rec);
+  border-color: #9d2c48;
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 22px;
+  border-radius: 12px;
+}
+
+.bigrecord:hover:not(:disabled) {
+  background: #b13454;
+  border-color: #89183d;
+}
+
+.bigrecord:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.bigrecord.on {
+  background: #adc1cf;
+  border-color: var(--rec);
+  color: #31141d;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.meter {
+  position: relative;
+  height: 20px;
+  background: #e4f4ff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2c865a, #004227);
+  transition: width 0.06s linear;
+}
+
+.meter-fill.hot {
+  background: linear-gradient(90deg, #976f4d, var(--rec));
+}
+
+.meter-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 11px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+  color: #15222a;
+  text-shadow: 0 1px 2px #000000;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-width: 560px;
+}
+
+.slider-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 80px;
+  align-items: center;
+  gap: 10px;
+}
+
+.slabel {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.svalue {
+  font: 11px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+  color: var(--text);
+  text-align: right;
+}
+
+.nudge {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nudge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nudge-row input[type='range'] {
+  flex: 1;
+  min-width: 220px;
+}
+
+.ghost.primary {
+  background: #7ec0df;
+  border-color: var(--accent);
+  color: #0d1921;
+}
+
+.detail-dial {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px 8px;
+  max-width: 560px;
+}
+
+.detail-dial input[type='range'] {
+  width: 100%;
+}
+
+.detail-ends {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.detail-ends strong {
+  font: 14px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+  color: var(--accent);
+}
+
+.nudge-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  min-width: 38px;
+}
+
+.nudge-value {
+  font: 14px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+  color: var(--accent);
+  min-width: 78px;
+  text-align: right;
+}
+
+.takepick {
+  min-width: 260px;
+}
+
+.unit {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.shortcuts {
+  margin-top: 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.shortcuts h4 {
+  margin: 0 0 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.shortcuts ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+kbd {
+  background: #e4f4ff;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  padding: 0 4px;
+  font: 10px ui-monospace, Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono, monospace, monospace;
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------ floaters --- */
+
+.rec-badge {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--rec);
+  color: #01070e;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  box-shadow: 0 6px 22px rgba(198, 68, 98, 0.35);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.rec-badge.countIn {
+  background: #613200;
+  box-shadow: 0 6px 22px rgba(97, 50, 0, 0.3);
+}
+
+.gesture-hint {
+  position: fixed;
+  bottom: 46vh;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(231, 244, 253, 0.95);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  padding: 8px 18px;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Scrollbars are styled with the rest of the glass dressing, further down. */
+
+@media (max-width: 1100px) {
+  .pane {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .col.narrow {
+    border-left: none;
+    border-top: 1px solid var(--line);
+    padding-left: 0;
+    padding-top: 12px;
+  }
+}
+
+/* bwp:polish:start */
+
+input[type='range'] { -webkit-appearance: none; appearance: none; background: transparent; height: 21px; }
+input[type='range']::-webkit-slider-runnable-track { height: 8px; background: #ebf6fd; border: 1px solid #adc6d7; border-radius: 99px; box-shadow: inset 0 1px 2px rgba(0, 40, 90, 0.22); background-image: linear-gradient(180deg, rgba(0, 40, 90, 0.08), rgba(255, 255, 255, 0.25)); }
+input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 17px; height: 17px; margin-top: -5px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), #006686 48%, #003d52); border: 1px solid #003d52; border-radius: 99px; box-shadow: 0 1px 3px #003d5266, inset 0 1px 1px rgba(255, 255, 255, 0.85); cursor: pointer; }
+input[type='range']::-moz-range-track { height: 8px; background: #ebf6fd; border: 1px solid #adc6d7; border-radius: 99px; box-shadow: inset 0 1px 2px rgba(0, 40, 90, 0.22); background-image: linear-gradient(180deg, rgba(0, 40, 90, 0.08), rgba(255, 255, 255, 0.25)); }
+input[type='range']::-moz-range-thumb { width: 17px; height: 17px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), #006686 48%, #003d52); border: 1px solid #003d52; border-radius: 99px; box-shadow: 0 1px 3px #003d5266, inset 0 1px 1px rgba(255, 255, 255, 0.85); cursor: pointer; }
+
+input[type='checkbox'] { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; margin: 0 2px; border: 1px solid #adc6d7; border-radius: 4px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), #ebf6fd); display: inline-grid; place-content: center; cursor: pointer; vertical-align: middle; }
+input[type='checkbox']::before { content: ''; width: 9px; height: 9px; transform: scale(0); transition: transform 0.09s ease-in-out; background: #006686; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+input[type='checkbox']:checked { border-color: #006686; }
+input[type='checkbox']:checked::before { transform: scale(1); }
+input[type='radio'] { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; margin: 0 2px; border: 1px solid #adc6d7; border-radius: 50%; background: #ebf6fd; display: inline-grid; place-content: center; cursor: pointer; vertical-align: middle; }
+input[type='radio']::before { content: ''; width: 7px; height: 7px; border-radius: 50%; transform: scale(0); background: #006686; }
+input[type='radio']:checked { border-color: #006686; }
+input[type='radio']:checked::before { transform: scale(1); }
+
+select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'10'%20height%3D'6'%3E%3Cpath%20d%3D'M1%201l4%204%204-4'%20fill%3D'none'%20stroke%3D'%2338637a'%20stroke-width%3D'1.6'%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 24px; }
+
+/* ------------------------------------------------- number fields --------- */
+/* The pill wraps the input and our own stepper buttons. The native spin
+   button can't be themed (Chrome deletes it once restyled), so it's hidden
+   and the chevrons are real elements. */
+
+.numfield {
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.numfield:focus-within {
+  outline: 1px solid var(--accent);
+}
+
+.numfield input[type='number'] {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  width: 44px;
+  padding: 4px 2px 4px 9px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.numfield input[type='number']::-webkit-inner-spin-button,
+.numfield input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.numfield input:focus,
+.numfield input:focus-visible {
+  outline: none;
+}
+
+.numsteps {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+}
+
+.numsteps button {
+  flex: 1;
+  display: grid;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 6px;
+  color: #38637a;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Chevrons hug the midline of the pill rather than centring in each half. */
+.numsteps button:first-child {
+  place-content: end center;
+  padding-bottom: 2.5px;
+}
+
+.numsteps button:last-child {
+  place-content: start center;
+  padding-top: 2.5px;
+}
+
+.numsteps button:hover {
+  background: rgba(0, 102, 134, 0.12);
+}
+
+:focus-visible { outline: 2px solid #006686; outline-offset: 2px; }
+::selection { background: #006686; color: #edf9ff; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #daf0ff; }
+::-webkit-scrollbar-thumb { background: #ebf6fd; border: 1px solid #adc6d7; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #adc6d7; }
+
+button:active:not(:disabled) { transform: translateY(1px); }
+
+a { text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+/* bwp:polish:end */
+
+/* bwp:keep:start */
+/* ---- frutiger aero dressing (manual layer over seed lily-7) ------------- */
+/* Glass, sheen, and liquid touches per the aero rules brief: gradients only
+   as light on glass, blue-tinted shadows, one water element per screen. */
+
+body {
+  background:
+    radial-gradient(120% 90% at 18% -10%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #ecf8ff 0%, var(--bg) 45%, #b5daf1 100%);
+}
+
+.topbar {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.35) 48%, rgba(255, 255, 255, 0) 52%, rgba(66, 150, 200, 0.12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(30, 90, 140, 0.1);
+}
+
+button {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.25) 45%, rgba(255, 255, 255, 0) 55%, rgba(60, 140, 190, 0.1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 2px rgba(30, 90, 140, 0.15);
+}
+
+.tab,
+.x {
+  background-image: none;
+  box-shadow: none;
+}
+
+.toggle.on,
+.transport-btn.active,
+.ghost.primary {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.12) 45%, rgba(0, 80, 120, 0.08) 55%, rgba(0, 80, 120, 0.16));
+}
+
+.bigrecord {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.08) 42%, rgba(120, 0, 30, 0.1) 55%, rgba(120, 0, 30, 0.18));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 6px rgba(198, 68, 98, 0.3);
+  text-shadow: 0 1px 2px rgba(80, 0, 20, 0.35);
+}
+
+.track {
+  background: rgba(255, 255, 255, 0.55);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.15));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px rgba(30, 90, 140, 0.12);
+}
+
+.track.active {
+  box-shadow: inset 0 0 0 1px rgba(0, 102, 134, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 10px rgba(30, 90, 140, 0.18);
+}
+
+.tracklist,
+.bottom {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 120px);
+}
+
+.position {
+  background: linear-gradient(180deg, #cfeefd, #e9fbff 55%, #d8f3fe);
+  box-shadow: inset 0 1px 3px rgba(20, 80, 120, 0.25), inset 0 -1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.meter {
+  background: linear-gradient(180deg, #c9dfef, #eef8ff);
+  box-shadow: inset 0 1px 3px rgba(20, 80, 120, 0.28);
+}
+
+.meter::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 50% 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.08));
+  pointer-events: none;
+}
+
+.rec-badge {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1) 45%, rgba(120, 0, 30, 0.15));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 6px 22px rgba(198, 68, 98, 0.4);
+  text-shadow: 0 1px 2px rgba(80, 0, 20, 0.35);
+}
+
+.gesture-hint {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(30, 90, 140, 0.2);
+}
+
+kbd {
+  background: linear-gradient(180deg, #ffffff, #dceefa);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Scrolling panels use their own rail (see ScrollArea), so there is no native
+   scrollbar left in the app to dress. */
+/* bwp:keep:end */

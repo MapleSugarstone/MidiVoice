@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" font-family="Optima, Candara, 'Noto Sans', 'Source Sans Pro', sans-serif">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6fcff"/>
+      <stop offset="0.26" stop-color="#c6e6f8"/>
+      <stop offset="0.5" stop-color="#7fb3d4"/>
+      <stop offset="0.75" stop-color="#3a6f9a"/>
+      <stop offset="1" stop-color="#134867"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7ed6a6" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#005034" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eafff5"/>
+      <stop offset="0.35" stop-color="#9fe6c6"/>
+      <stop offset="0.7" stop-color="#37a97c"/>
+      <stop offset="1" stop-color="#007a52"/>
+    </linearGradient>
+    <linearGradient id="fin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fdfba"/>
+      <stop offset="1" stop-color="#00694a"/>
+    </linearGradient>
+    <linearGradient id="glossFade" x1="0" y1="29.58" x2="0" y2="38.42" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bodyLine" x1="6.99" y1="38" x2="46.07" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#3d3d3d" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="tailLine" x1="42.86" y1="38" x2="57.05" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#3d3d3d" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="dorsalLine" x1="26" y1="24.38" x2="36.8" y2="24.38" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldFade" x1="12.095" y1="23.224" x2="33.471" y2="5.431" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe664"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldFadeBeam" x1="570" y1="152" x2="655" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe664"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <path id="beamNote" d="M583.31 145.67 A14 10.5 -18 1 1 556.69 154.33 A14 10.5 -18 1 1 583.31 145.67 Z M645.31 137.67 A14 10.5 -18 1 1 618.69 146.33 A14 10.5 -18 1 1 645.31 137.67 Z M576 147 L576 86 Q576 83 579 83 L580 83 Q583 83 583 86 L583 147 Q583 150 580 150 L579 150 Q576 150 576 147 Z M638 139 L638 78 Q638 75 641 75 L642 75 Q645 75 645 78 L645 139 Q645 142 642 142 L641 142 Q638 142 638 139 Z M576 78 L645 70 L645 84 L576 92 Z"/>
+    <linearGradient id="titleWhite" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d7e9f4"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bubble" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="0.72" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="0.92" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.12"/>
+    </radialGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0a3c5a" flood-opacity="0.28"/>
+    </filter>
+    <filter id="textShadow" x="-15%" y="-25%" width="130%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.2" flood-color="#0a2c40" flood-opacity="0.55"/>
+    </filter>
+    <path id="bodyPath" d="M7.5 38 C12 29.5 20.5 26.2 28.8 26.6 C37 27 43.4 31.4 45.6 38 C43.4 44.6 37 49 28.8 49.4 C20.5 49.8 12 46.5 7.5 38 Z"/>
+    <clipPath id="bodyClip"><use href="#bodyPath"/></clipPath>
+    <g id="goldNote">
+      <g fill="#ffffff" stroke="#ffffff" stroke-width="2.8" stroke-linejoin="round">
+        <ellipse cx="13.8" cy="23.4" rx="4.3" ry="3.2" transform="rotate(-18 13.8 23.4)"/>
+        <rect x="15.9" y="8" width="2.2" height="15.6" rx="1"/>
+        <path d="M18.1 8 C21.8 9.2 24.2 11.9 24.4 16.1 C23.3 13.4 21 12 18.1 12.1 Z"/>
+      </g>
+      <path fill="url(#goldFade)" transform="rotate(-18 13.8 23.4)" d="m 21.507508,9.711803 c -0.526885,-0.1711954 4.307239,-2.3810886 -1.260073,0.64204 L 16.76194,21.081091 c -0.79933,-0.56537 -1.859989,-0.880591 -2.962757,-0.880513 -2.373942,5.56e-4 -4.2981465,1.432671 -4.2986464,3.199326 -1.039e-4,1.767269 1.9249004,3.200004 4.2996684,3.20014 1.879917,-1.3e-4 3.541794,-0.909047 4.103307,-2.244191 0.103155,-0.106349 0.183957,-0.237498 0.232994,-0.388417 l 3.244678,-9.986094 c 2.788966,0.801044 4.544515,2.843503 4.756331,5.751275 1.10766,-4.056241 -0.984884,-7.515132 -4.132973,-9.7997625 l -0.0012,0.00372 C 21.914099,9.8673228 21.810895,9.8103793 21.696977,9.773365 Z"/>
+    </g>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#sky)"/>
+  <circle cx="210" cy="70" r="320" fill="url(#sun)"/>
+  <path d="M0 0 H1200 V70 C820 150 340 40 0 120 Z" fill="url(#sheen)"/>
+  <path d="M0 480 C320 400 640 540 1200 430 L1200 630 H0 Z" fill="url(#grass)"/>
+  <path d="M0 500 C320 424 640 560 1200 452" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/>
+
+  <circle cx="1090" cy="140" r="46" fill="#ffffff" fill-opacity="0.1" stroke="#ffffff" stroke-opacity="0.4" stroke-width="4"/>
+  <circle cx="1035" cy="205" r="24" fill="#ffffff" fill-opacity="0.25"/>
+  <circle cx="150" cy="505" r="34" fill="url(#bubble)"/>
+  <circle cx="262" cy="545" r="18" fill="url(#bubble)"/>
+  <circle cx="960" cy="525" r="30" fill="url(#bubble)"/>
+  <circle cx="85" cy="130" r="26" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/>
+  <circle cx="420" cy="95" r="14" fill="#ffffff" fill-opacity="0.12"/>
+  <circle cx="760" cy="65" r="20" fill="#ffffff" fill-opacity="0.09"/>
+  <circle cx="560" cy="470" r="16" fill="#ffffff" fill-opacity="0.1"/>
+
+  <g filter="url(#soft)">
+    <rect x="70" y="205" width="470" height="235" rx="30" fill="#ffffff" fill-opacity="0.28"/>
+    <rect x="70" y="205" width="470" height="235" rx="30" fill="none" stroke="#ffffff" stroke-opacity="0.65" stroke-width="1.5"/>
+    <path d="M70 235 C70 218.4 83.4 205 100 205 H510 C526.6 205 540 218.4 540 235 V262 C390 292 220 292 70 268 Z" fill="url(#sheen)"/>
+  </g>
+  <g filter="url(#textShadow)">
+    <text x="105" y="302" font-size="74" font-weight="700" letter-spacing="-1" fill="url(#titleWhite)">MidiVoice</text>
+    <text x="107" y="360" font-size="29" fill="#f4fbff">Hum and doot into the mic</text>
+    <text x="107" y="398" font-size="29" fill="#f4fbff">for MIDI tunes!</text>
+  </g>
+
+  <g filter="url(#soft)"><g transform="translate(668 86) scale(6.4)">
+    <path d="M43.5 38 C47.5 33 51.5 29.5 56 27.5 C54.2 31.2 53.8 34.6 54.4 38 C53.8 41.4 54.2 44.8 56 48.5 C51.5 46.5 47.5 43 43.5 38 Z" fill="url(#fin)" stroke="url(#tailLine)"/>
+    <path d="M26 27.8 C27.3 22.2 32.4 19.9 36.8 21.4 C34.3 23.6 32.8 25.6 32.4 27.2 C30.2 26.7 28 26.9 26 27.8 Z" fill="url(#fin)" stroke="url(#dorsalLine)"/>
+    <use href="#bodyPath" fill="url(#body)" stroke="url(#bodyLine)" stroke-width="0.9"/>
+    <g clip-path="url(#bodyClip)">
+      <ellipse cx="27.28" cy="34" rx="14.05" ry="5.76" fill="url(#glossFade)"/>
+      <path d="M27 41 C30 40.5 33 41.6 34.6 43.8 C32.4 44.8 29.4 44.6 27.4 43.2 Z" fill="url(#fin)" opacity="0.9"/>
+      <path d="M21.5 30.5 Q24.5 37.8 21.5 45.3" fill="none" stroke="#005a40" stroke-opacity="0.3" stroke-width="1.3"/>
+    </g>
+    <circle cx="15.8" cy="35.2" r="3.5" fill="#ffffff"/>
+    <ellipse cx="16.042" cy="34.925" rx="2.843" ry="2.913" fill="#082530"/>
+    <circle cx="16.791" cy="33.51" r="0.8" fill="#ffffff"/>
+    <circle cx="17.836" cy="34.594" r="0.262" fill="#ffffff"/>
+    <path d="m 11.13,42.15 q 1.98,0.97 2.97,-0.1" fill="none" stroke="#073345" stroke-opacity="0.6" stroke-width="0.98" stroke-linecap="round"/>
+  </g></g>
+
+  <circle cx="712" cy="318" r="5" fill="#ffffff" fill-opacity="0.75"/>
+  <circle cx="688" cy="282" r="8" fill="url(#bubble)"/>
+  <circle cx="652" cy="232" r="11" fill="url(#bubble)"/>
+  <circle cx="705" cy="250" r="4" fill="#ffffff" fill-opacity="0.6"/>
+
+  <g filter="url(#soft)"><use href="#goldNote" transform="translate(640 255) scale(3)"/></g>
+
+  <g filter="url(#soft)">
+    <use href="#beamNote" fill="#ffffff" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"/>
+    <use href="#beamNote" fill="url(#goldFadeBeam)"/>
+  </g>
+</svg>
