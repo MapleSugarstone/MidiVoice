@@ -104,7 +104,7 @@ export async function renderProject(
           playedMidi,
           Math.max(0.02, beatsToSeconds(note.duration, project.bpm)),
           time,
-          note.velocity,
+          0.8,
         );
       }
     }

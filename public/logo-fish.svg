@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- The fish from favicon.svg, isolated (no tile, note, or bubbles) for the top-bar logo. -->
+<svg viewBox="6.5 20 50.5 31" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="linearGradient188">
+      <stop style="stop-color:#000000;stop-opacity:0.22429906;" offset="0" />
+      <stop style="stop-color:#ffffff;stop-opacity:0;" offset="1" />
+    </linearGradient>
+    <linearGradient id="linearGradient186">
+      <stop style="stop-color:#000000;stop-opacity:0.40000001;" offset="0" />
+      <stop style="stop-color:#3d3d3d;stop-opacity:0;" offset="1" />
+    </linearGradient>
+    <linearGradient id="linearGradient184">
+      <stop style="stop-color:#000000;stop-opacity:0.40000001;" offset="0" />
+      <stop style="stop-color:#3d3d3d;stop-opacity:0;" offset="1" />
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eafff5" />
+      <stop offset="0.35" stop-color="#9fe6c6" />
+      <stop offset="0.7" stop-color="#37a97c" />
+      <stop offset="1" stop-color="#007a52" />
+    </linearGradient>
+    <linearGradient id="fin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fdfba" />
+      <stop offset="1" stop-color="#00694a" />
+    </linearGradient>
+    <linearGradient id="glossFade" x1="6.1271475" y1="50.863799" x2="6.1271475" y2="67.380458" gradientTransform="matrix(1.7015902,0,0,0.53474264,2.8038362,2.3854658)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.8" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient xlink:href="#fin" id="linearGradient183" x1="18.438014" y1="59.864499" x2="18.438014" y2="65.054458" gradientTransform="scale(1.464366,0.6828894)" gradientUnits="userSpaceOnUse" />
+    <linearGradient xlink:href="#linearGradient184" id="linearGradient185" x1="6.990828" y1="38" x2="46.074341" y2="38" gradientUnits="userSpaceOnUse" />
+    <linearGradient xlink:href="#linearGradient186" id="linearGradient187" x1="42.859688" y1="38" x2="57.049031" y2="38" gradientUnits="userSpaceOnUse" />
+    <linearGradient xlink:href="#linearGradient188" id="linearGradient189" x1="26" y1="24.376" x2="36.8" y2="24.376" gradientUnits="userSpaceOnUse" />
+    <path id="bodyPath" d="M7.5 38 C12 29.5 20.5 26.2 28.8 26.6 C37 27 43.4 31.4 45.6 38 C43.4 44.6 37 49 28.8 49.4 C20.5 49.8 12 46.5 7.5 38 Z" />
+    <clipPath id="bodyClip">
+      <use href="#bodyPath" />
+    </clipPath>
+  </defs>
+  <path d="M43.5 38 C47.5 33 51.5 29.5 56 27.5 C54.2 31.2 53.8 34.6 54.4 38 C53.8 41.4 54.2 44.8 56 48.5 C51.5 46.5 47.5 43 43.5 38 Z" fill="url(#fin)" stroke="url(#linearGradient187)" stroke-opacity="0.4" />
+  <path d="M26 27.8 C27.3 22.2 32.4 19.9 36.8 21.4 C34.3 23.6 32.8 25.6 32.4 27.2 C30.2 26.7 28 26.9 26 27.8 Z" fill="url(#fin)" stroke="url(#linearGradient189)" />
+  <use href="#bodyPath" fill="url(#body)" stroke="url(#linearGradient185)" stroke-opacity="0.4" stroke-width="0.9" />
+  <g clip-path="url(#bodyClip)" transform="translate(0,-0.03760283)">
+    <ellipse fill="url(#glossFade)" ry="5.7649441" rx="14.052291" cy="34.000584" cx="27.282021" />
+    <path d="m 27,41 c 3,-0.5 6,0.6 7.6,2.8 -2.2,1 -5.2,0.8 -7.2,-0.6 z" fill="url(#linearGradient183)" opacity="0.9" />
+    <path d="m 21.5,30.5 q 3,7.3 0,14.8" fill="none" stroke="#005a40" stroke-opacity="0.3" stroke-width="1.3" />
+  </g>
+  <circle cx="15.8" cy="35.2" r="3.5" fill="#ffffff" />
+  <ellipse cx="16.042004" cy="34.924561" fill="#082530" rx="2.842891" ry="2.9127855" />
+  <circle cx="16.791304" cy="33.509518" r="0.80000001" fill="#ffffff" />
+  <circle cx="17.836142" cy="34.593933" r="0.26156852" fill="#ffffff" />
+  <path d="m 11.129876,42.151116 q 1.979889,0.973739 2.968555,-0.100411" fill="none" stroke="#073345" stroke-opacity="0.6" stroke-width="0.98" stroke-linecap="round" />
+</svg>

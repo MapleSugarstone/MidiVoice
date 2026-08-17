@@ -25,7 +25,9 @@ class AudioEngine {
   private reverb!: Tone.Reverb;
   private limiter!: Tone.Limiter;
   private click!: Tone.Synth;
+  private calClick!: Tone.Synth;
   private metronomeId: number | null = null;
+  private metronomeVolume = 0.7;
 
   ready = false;
   anchor: TransportAnchor | null = null;
@@ -49,6 +51,14 @@ class AudioEngine {
       oscillator: { type: 'square' },
       envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.02 },
       volume: -14,
+    }).connect(this.master);
+    this.applyMetronomeVolume();
+    // Calibration keeps its own click at a fixed level, so it still works with
+    // the metronome turned down to silent.
+    this.calClick = new Tone.Synth({
+      oscillator: { type: 'square' },
+      envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.02 },
+      volume: -8,
     }).connect(this.master);
 
     const transport = Tone.getTransport();
@@ -82,6 +92,16 @@ class AudioEngine {
 
   setMasterVolume(gain: number) {
     if (this.ready) this.master.gain.rampTo(gain, 0.05);
+  }
+
+  setMetronomeVolume(v: number) {
+    this.metronomeVolume = Math.max(0, Math.min(1, v));
+    if (this.ready) this.applyMetronomeVolume();
+  }
+
+  private applyMetronomeVolume() {
+    const v = this.metronomeVolume;
+    this.click.volume.value = v === 0 ? -Infinity : -34 + 28 * v;
   }
 
   /** The reverb bus stays fully wet, with per-channel send levels setting the amount. */
@@ -189,7 +209,8 @@ class AudioEngine {
           freq,
           midi: playedMidi,
           durationTicks: Math.max(1, Math.round(note.duration * ppq)),
-          velocity: note.velocity,
+          // Notes have no individual volume; the track's volume fader is the only level control.
+          velocity: 0.8,
         };
       });
 
@@ -349,12 +370,13 @@ class AudioEngine {
   }
 
   /** Held-note input from a MIDI keyboard: sound follows key down/up. */
-  liveNoteOn(trackId: string, midi: number, velocity: number) {
+  liveNoteOn(trackId: string, midi: number, _velocity: number) {
     const ch = this.channels.get(trackId);
     if (!ch) return;
     const freq = midiToFreq(midi);
-    if (ch.instrument.noteOn) ch.instrument.noteOn(freq, midi, velocity);
-    else ch.instrument.trigger(freq, midi, 0.4, Tone.now(), velocity);
+    // Uniform level to match playback, where notes carry no individual volume.
+    if (ch.instrument.noteOn) ch.instrument.noteOn(freq, midi, 0.8);
+    else ch.instrument.trigger(freq, midi, 0.4, Tone.now(), 0.8);
     this.onAudition?.(midi, true);
   }
 
@@ -377,7 +399,7 @@ class AudioEngine {
   /** Latency calibration click, played at an exact audio-context time. */
   calibrationClick(time: number) {
     if (!this.ready) return;
-    this.click.triggerAttackRelease(2000, 0.01, time, 1);
+    this.calClick.triggerAttackRelease(2000, 0.01, time, 1);
   }
 }
 

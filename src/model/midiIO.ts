@@ -2,6 +2,11 @@ import { Midi } from '@tonejs/midi';
 import type { InstrumentId, Project, Track } from './types';
 import { beatsToSeconds, secondsToBeats, snapToScale } from './music';
 import { makeProject, makeTrack, newId } from './store';
+import { getTakeAudio, putTakeAudio } from '../audio/takeAudio';
+import { float32ToWav } from '../audio/render';
+
+/** Note volume is not editable per note; everything plays and exports at this level. */
+export const FIXED_VELOCITY = 0.8;
 
 /** General MIDI program numbers so exported files open with sensible sounds. */
 const GM_PROGRAM: Record<InstrumentId, number> = {
@@ -73,7 +78,7 @@ export function projectToMidi(project: Project): Uint8Array {
         midi: Math.max(0, Math.min(127, Math.round(midiNote))),
         time: beatsToSeconds(note.start, project.bpm),
         duration: Math.max(0.02, beatsToSeconds(note.duration, project.bpm)),
-        velocity: Math.max(0.01, Math.min(1, note.velocity)),
+        velocity: FIXED_VELOCITY,
       });
     }
   }
@@ -148,16 +153,83 @@ export function exportMidiFile(project: Project): void {
   downloadBlob(new Blob([copy.buffer], { type: 'audio/midi' }), `${safeFilename(project.name)}.mid`);
 }
 
-export function exportProjectFile(project: Project): void {
-  const json = JSON.stringify({ format: 'midivoice.v1', project }, null, 2);
-  downloadBlob(new Blob([json], { type: 'application/json' }), `${safeFilename(project.name)}.midivoice.json`);
-}
-
 export function parseProjectFile(text: string): Project {
   const parsed = JSON.parse(text);
   const project: Project = parsed.project ?? parsed;
   if (!project || !Array.isArray(project.tracks)) throw new Error('Not a MidiVoice project file');
   // Takes reference audio that only ever lived in memory, so the metadata survives for nudge history but can no longer be re-transcribed.
   project.takes = Array.isArray(project.takes) ? project.takes : [];
+  return project;
+}
+
+// ------------------------------------------------------------- .fish file ---
+// A .fish file is a plain ZIP: project.json plus each take's audio as a real
+// WAV under takes/, so a reopened project can be re-detected, and renaming the
+// file to .zip hands back every recording.
+
+interface FishTakeMeta {
+  contourHopSec: number;
+  contourStartSec: number;
+}
+
+/** Decode the fixed-layout mono 16-bit WAV that float32ToWav writes. */
+function wavToFloat32(bytes: Uint8Array): { audio: Float32Array; sampleRate: number } {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const sampleRate = view.getUint32(24, true);
+  const dataSize = view.getUint32(40, true);
+  const frames = Math.min(dataSize / 2, (bytes.byteLength - 44) / 2) | 0;
+  const audio = new Float32Array(frames);
+  for (let i = 0; i < frames; i++) audio[i] = view.getInt16(44 + i * 2, true) / 32768;
+  return { audio, sampleRate };
+}
+
+export async function exportFishFile(project: Project): Promise<void> {
+  const { zipSync, strToU8 } = await import('fflate');
+  const takeMeta: Record<string, FishTakeMeta> = {};
+  const entries: Record<string, [Uint8Array, { level: 0 | 6 }]> = {};
+
+  for (const take of project.takes) {
+    const stored = getTakeAudio(take.id);
+    if (!stored) continue;
+    const wavBytes = new Uint8Array(await float32ToWav(stored.audio, stored.sampleRate).arrayBuffer());
+    // WAV data barely compresses; store it so saving stays instant.
+    entries[`takes/${take.id}.wav`] = [wavBytes, { level: 0 }];
+    entries[`takes/${take.id}.contour.f32`] = [
+      new Uint8Array(stored.contour.buffer, stored.contour.byteOffset, stored.contour.byteLength),
+      { level: 6 },
+    ];
+    takeMeta[take.id] = { contourHopSec: stored.contourHopSec, contourStartSec: stored.contourStartSec };
+  }
+
+  const json = JSON.stringify({ format: 'midivoice.fish.v1', project, takeMeta }, null, 2);
+  entries['project.json'] = [strToU8(json), { level: 6 }];
+
+  const zipped = zipSync(entries);
+  downloadBlob(new Blob([zipped as BlobPart], { type: 'application/zip' }), `${safeFilename(project.name)}.fish`);
+}
+
+/** Parse a .fish zip and restore its take audio into the session store. */
+export async function parseFishFile(data: ArrayBuffer): Promise<Project> {
+  const { unzipSync, strFromU8 } = await import('fflate');
+  const files = unzipSync(new Uint8Array(data));
+  const projectEntry = files['project.json'];
+  if (!projectEntry) throw new Error('Not a MidiVoice .fish file (no project.json inside)');
+
+  const parsed = JSON.parse(strFromU8(projectEntry));
+  const project = parseProjectFile(strFromU8(projectEntry));
+  const takeMeta: Record<string, FishTakeMeta> = parsed.takeMeta ?? {};
+
+  for (const take of project.takes) {
+    const wavBytes = files[`takes/${take.id}.wav`];
+    if (!wavBytes) continue;
+    const { audio, sampleRate } = wavToFloat32(wavBytes);
+    const contourBytes = files[`takes/${take.id}.contour.f32`];
+    // Copy so the Float32Array view starts at byte 0 of its own buffer.
+    const contour = contourBytes
+      ? new Float32Array(contourBytes.slice().buffer, 0, Math.floor(contourBytes.byteLength / 4))
+      : new Float32Array(0);
+    const meta = takeMeta[take.id];
+    putTakeAudio(take.id, audio, sampleRate, contour, meta?.contourHopSec ?? 0.01, meta?.contourStartSec ?? 0);
+  }
   return project;
 }

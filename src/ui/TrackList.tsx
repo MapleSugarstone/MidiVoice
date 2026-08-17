@@ -10,13 +10,13 @@ const GROUPS = Array.from(new Set(INSTRUMENTS.map((i) => i.group)));
 /** Say what switching "in key" did, since on an already-in-key part it does nothing. */
 function inKeyReport(track: Track, project: Project, on: boolean): string {
   const key = `${NOTE_NAMES[project.keyRoot]} ${SCALES[project.scale].label.toLowerCase()}`;
-  if (!on) return `“${track.name}” plays the pitches you recorded again`;
+  if (!on) return `“${track.name}” plays recorded pitches unchanged`;
   const moved = track.notes.filter(
     (n) => snapToScale(n.midi, project.keyRoot, project.scale) !== n.midi,
   ).length;
-  if (track.notes.length === 0) return `“${track.name}” will land new notes in ${key}`;
+  if (track.notes.length === 0) return `New notes on “${track.name}” will snap to ${key}`;
   return moved === 0
-    ? `Every note on “${track.name}” was already in ${key}, so nothing moved`
+    ? `All notes on “${track.name}” were already in ${key}`
     : `${moved} note${moved === 1 ? '' : 's'} on “${track.name}” moved into ${key}`;
 }
 
@@ -52,8 +52,7 @@ export function TrackList() {
       <ScrollArea className="tracks">
         {project.tracks.length === 0 && (
           <p className="hint empty-tracks">
-            No tracks. Add a part above, then sing into it. The piano roll stays greyed out until there is
-            somewhere to put the notes.
+            No tracks. Add a part to begin.
           </p>
         )}
         {project.tracks.map((track, index) => {

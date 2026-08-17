@@ -344,17 +344,35 @@ export function PianoRoll() {
         if (y + v.rowH < 0 || y > h) continue;
 
         const isSel = selected.has(note.id);
-        const light = 38 + note.velocity * 26;
-        ctx.fillStyle = isSel
-          ? `hsl(${activeTrack.hue}, 90%, ${light + 18}%)`
-          : `hsl(${activeTrack.hue}, 70%, ${light}%)`;
-        roundRect(ctx, x, y + 1, nw, v.rowH - 2, Math.min(3, v.rowH / 4));
+        const hue = activeTrack.hue;
+        const sat = isSel ? 90 : 70;
+        const base = isSel ? 74 : 57;
+        const top = y + 1;
+        const bh = v.rowH - 2;
+        const rad = Math.min(3, v.rowH / 4);
+
+        // Glass fill: white sheen above a midline break, deeper colour below.
+        const g = ctx.createLinearGradient(0, top, 0, top + bh);
+        g.addColorStop(0, `hsl(${hue}, ${sat}%, ${Math.min(95, base + 25)}%)`);
+        g.addColorStop(0.45, `hsl(${hue}, ${sat}%, ${base + 6}%)`);
+        g.addColorStop(0.52, `hsl(${hue}, ${sat}%, ${base - 2}%)`);
+        g.addColorStop(1, `hsl(${hue}, ${sat}%, ${base - 12}%)`);
+        ctx.fillStyle = g;
+        roundRect(ctx, x, top, nw, bh, rad);
         ctx.fill();
 
-        if (isSel) {
-          ctx.strokeStyle = '#01070e';
-          ctx.lineWidth = 1.5;
-          roundRect(ctx, x + 0.5, y + 1.5, nw - 1, v.rowH - 3, Math.min(3, v.rowH / 4));
+        ctx.strokeStyle = isSel ? '#01070e' : `hsla(${hue}, 55%, 32%, 0.55)`;
+        ctx.lineWidth = isSel ? 1.5 : 1;
+        roundRect(ctx, x + 0.5, top + 0.5, nw - 1, bh - 1, rad);
+        ctx.stroke();
+
+        // Inner highlight along the top edge, skipped when the row is too thin to carry it.
+        if (bh >= 7 && nw >= 8) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x + rad + 0.5, top + 1.5);
+          ctx.lineTo(x + nw - rad - 0.5, top + 1.5);
           ctx.stroke();
         }
 
@@ -1077,15 +1095,6 @@ export function PianoRoll() {
 
     if (e.ctrlKey || e.metaKey) {
       zoom(Math.exp(-dy * 0.0022), localX, localY);
-    } else if (e.altKey) {
-      // Alt + wheel adjusts the loudness of the selected notes.
-      if (selectedNoteIds.length === 0) return;
-      const d = -dy * 0.001;
-      useStore.getState().updateNotes(
-        selectedNoteIds,
-        (n) => ({ velocity: Math.max(0.05, Math.min(1, n.velocity + d)) }),
-        false,
-      );
     } else if (e.shiftKey) {
       setView({ ...v, scrollBeat: Math.max(0, v.scrollBeat + dy / v.pxPerBeat) });
     } else {
@@ -1210,7 +1219,7 @@ export function PianoRoll() {
         store.setStatus(
           store.project.loopEnabled
             ? 'Looping the highlighted section'
-            : 'Section highlighted. Press Loop to play it round.',
+            : 'Section highlighted. Press Loop to repeat it.',
         );
       }
       return;

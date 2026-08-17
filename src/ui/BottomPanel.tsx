@@ -4,14 +4,14 @@ import { engine } from '../audio/engine';
 import { getTakeAudio } from '../audio/takeAudio';
 import { listInputDevices } from '../audio/recorder';
 import { midiInput } from '../audio/midiInput';
-import { GRIDS, midiToName, drumLaneName, snapToScale } from '../model/music';
+import { GRIDS } from '../model/music';
 import { ScrollArea } from './ScrollArea';
 import type { DetectorEngine, InputMode } from '../model/types';
 import { detailToSettings, settingsToDetail } from '../model/types';
 import type { useRecording } from './useRecording';
 import { NumberField } from './TopBar';
 
-type Tab = 'record' | 'timing' | 'detect' | 'notes';
+type Tab = 'record' | 'timing' | 'detect';
 
 interface Props {
   rec: ReturnType<typeof useRecording>;
@@ -20,7 +20,6 @@ interface Props {
 export function BottomPanel({ rec }: Props) {
   const [tab, setTab] = useState<Tab>('record');
   const status = useStore((s) => s.status);
-  const selectedCount = useStore((s) => s.selectedNoteIds.length);
 
   return (
     <section className="bottom">
@@ -30,7 +29,6 @@ export function BottomPanel({ rec }: Props) {
             ['record', 'Record'],
             ['timing', 'Timing'],
             ['detect', 'Detection'],
-            ['notes', `Notes${selectedCount ? ` (${selectedCount})` : ''}`],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button key={id} className={tab === id ? 'tab active' : 'tab'} onClick={() => setTab(id)}>
@@ -46,7 +44,6 @@ export function BottomPanel({ rec }: Props) {
         {tab === 'record' && <RecordTab rec={rec} />}
         {tab === 'timing' && <TimingTab rec={rec} />}
         {tab === 'detect' && <DetectTab />}
-        {tab === 'notes' && <NotesTab />}
       </ScrollArea>
     </section>
   );
@@ -55,10 +52,10 @@ export function BottomPanel({ rec }: Props) {
 // ---------------------------------------------------------------- Record ----
 
 const SOURCE_HINTS: Record<string, string> = {
-  melody: 'Hum or sing a line. Tracks pitch from about C2 up.',
-  bass: 'Tuned for low notes. Hum an octave down and it still tracks.',
-  drums: 'Beatbox into the mic; hits are sorted into kick / snare / clap / hats.',
-  midi: 'Play a connected MIDI keyboard. Keys sound through the track’s instrument and land as notes.',
+  melody: 'Sing or hum a line. Pitch is tracked from about C2 up.',
+  bass: 'Tracks low notes. Sing an octave down if needed.',
+  drums: 'Beatbox into the mic. Hits are classified as kick, snare, clap, or hats.',
+  midi: 'Play a connected MIDI keyboard. Notes are recorded onto the active track.',
 };
 
 function RecordTab({ rec }: Props) {
@@ -154,8 +151,8 @@ function RecordTab({ rec }: Props) {
         <p className="hint">{SOURCE_HINTS[sourceValue]}</p>
 
         <p className="hint">
-          Everything already recorded keeps playing while you record, so you can play the next part against it.
-          {!isMidi && <> Use headphones. Otherwise the mic picks up the backing track too.</>}
+          Existing tracks play back while recording.
+          {!isMidi && <> Use headphones so the mic does not pick them up.</>}
         </p>
       </div>
 
@@ -164,11 +161,11 @@ function RecordTab({ rec }: Props) {
         {isMidi && (
           <>
             {!midiInput.supported && (
-              <p className="error">This browser has no MIDI support. Chrome and Edge do.</p>
+              <p className="error">This browser does not support MIDI. Use Chrome or Edge.</p>
             )}
             {midiInput.supported && midiDevices.length === 0 && (
               <p className="hint">
-                No MIDI device detected. Plug in a keyboard and it is picked up automatically.
+                No MIDI device detected. Connect a keyboard; it is detected automatically.
                 {!midiInput.enabled && (
                   <>
                     {' '}
@@ -183,10 +180,6 @@ function RecordTab({ rec }: Props) {
               <p key={d.id} className="meta">Connected: {d.name}</p>
             ))}
             {midiInput.error && <p className="error">{midiInput.error}</p>}
-            <p className="hint small">
-              Keys play live through the active track&rsquo;s instrument, and recording captures them onto that
-              track in time with the song.
-            </p>
           </>
         )}
         {!isMidi && (
@@ -223,7 +216,7 @@ function RecordTab({ rec }: Props) {
           </label>
         )}
 
-        <label className="check" title="Browser noise suppression distorts pitch, so leave these off unless you must">
+        <label className="check" title="Browser noise suppression distorts pitch tracking. Leave off unless required.">
           <input
             type="checkbox"
             checked={micOptions.noiseSuppression}
@@ -294,8 +287,8 @@ function TimingTab({ rec }: Props) {
   return (
     <div className="pane">
       <div className="col">
-        <h3>Fix a take’s timing</h3>
-        {!take && <p className="hint">Record something and this is where you slide it into place.</p>}
+        <h3>Take timing</h3>
+        {!take && <p className="hint">No takes recorded.</p>}
 
         {take && (
           <>
@@ -353,8 +346,7 @@ function TimingTab({ rec }: Props) {
                 </button>
               </div>
               <p className="hint">
-                Drag left if the take landed late, right if it landed early. Play the song while you drag.
-                The change is live.
+                Drag left if the take is late, right if it is early. Changes apply during playback.
               </p>
             </div>
 
@@ -409,9 +401,8 @@ function TimingTab({ rec }: Props) {
                 </span>
               </div>
               <p className="hint">
-                Nudge moves the whole take; <strong>Bars</strong> stretches it, for when you drifted ahead of or
-                behind the click over the course of the take. <strong>Fit take to grid</strong> works both out
-                for you.
+                Nudge shifts the whole take. <strong>Bars</strong> stretches it. <strong>Fit take to grid</strong>{' '}
+                sets both automatically.
               </p>
             </div>
 
@@ -468,20 +459,18 @@ function TimingTab({ rec }: Props) {
           </div>
         </label>
         <p className="hint">
-          How much later the mic hears you than the beat you sang to. Everything you record is pulled back by
-          this much.
+          Recordings are shifted earlier by this amount to compensate for round-trip delay.
         </p>
         <p className="meta">
-          Browser reports {engine.outputLatencyMs.toFixed(0)} ms on the output side
-          {rec.inputLatencyHintMs > 0 ? ` and ${rec.inputLatencyHintMs.toFixed(0)} ms on input` : ''}. The
-          input side is usually not reported, so measure or nudge to get the rest.
+          Browser reports {engine.outputLatencyMs.toFixed(0)} ms output
+          {rec.inputLatencyHintMs > 0 ? `, ${rec.inputLatencyHintMs.toFixed(0)} ms input` : ''}
         </p>
         <button className="ghost" onClick={() => void rec.runCalibration()} disabled={rec.phase === 'calibrating'}>
           {rec.phase === 'calibrating' ? 'Measuring…' : 'Measure automatically'}
         </button>
         <p className="hint small">
-          Plays six clicks through your <strong>speakers</strong> and listens for them. Turn headphones off, keep
-          the room quiet, then run it.
+          Plays six clicks through the <strong>speakers</strong> and measures the delay. Remove headphones and
+          keep the room quiet.
         </p>
         {rec.calibration && (
           <p className={rec.calibration.ok ? 'ok' : 'error'}>{rec.calibration.message}</p>
@@ -507,9 +496,8 @@ function TimingTab({ rec }: Props) {
           </div>
         </label>
         <p className="hint small">
-          Moves the bar lines under the whole song without moving a single note in real time, for when the
-          click was wrong rather than your playing. The tempo box in the top bar does the opposite: it speeds
-          the song up or slows it down.
+          Moves the bar grid without changing note timing. Use when the click was set wrong. The Tempo field
+          in the top bar changes playback speed instead.
         </p>
 
         <label className="field">
@@ -525,7 +513,7 @@ function TimingTab({ rec }: Props) {
           <span className="unit">{Math.round(quantizeStrength * 100)}%</span>
         </label>
         <p className="hint small">
-          Below 100% the notes move partway to the grid, which keeps a human feel instead of sounding programmed.
+          Below 100%, notes move only part of the way to the grid.
         </p>
       </div>
     </div>
@@ -569,13 +557,11 @@ function DetectTab() {
           </select>
         </label>
         <p className="hint small">
-          Neural is Spotify’s Basic Pitch model. It runs on your device (about 1 MB, fetched once) and is much
-          better at fast repeated notes and at not splitting vibrato into extras. Classic is the original
-          detector, and it takes over automatically if the model can’t load. Changing this re-detects the
-          selected take so you can compare.
+          Neural runs Spotify’s Basic Pitch model on this device (about 1 MB, fetched once). Classic is used
+          if the model cannot load. Changing this re-detects the selected take.
         </p>
 
-        <h3>How much detail</h3>
+        <h3>Detail</h3>
         <div className="detail-dial">
           <input
             type="range"
@@ -598,21 +584,17 @@ function DetectTab() {
             }}
           />
           <div className="detail-ends">
-            <span>Smoother: fewer, longer notes</span>
+            <span>Fewer, longer notes</span>
             <strong>{Math.round(settingsToDetail(settings) * 100)}</strong>
-            <span>More detail: catches ornaments</span>
+            <span>More, shorter notes</span>
           </div>
         </div>
         <p className="hint">
-          The one control worth reaching for. Let go of it and the selected take is detected again straight
-          away, so you can hear the difference rather than guess at it.
-          {take && !getTakeAudio(take.id) && <> (Needs a take whose audio is still in this session.)</>}
+          Release the slider to re-detect the selected take.
+          {take && !getTakeAudio(take.id) && <> (Requires a take recorded this session.)</>}
         </p>
         <p className="hint">
-          <strong>Short notes missing?</strong> Push it up. Quick grace notes and ornaments only show up near
-          the top of the range, because a brief note is measured as a smaller pitch move than you sang.{' '}
-          <strong>Too many notes?</strong> Pull it down. It is set per take, so an ornamented phrase can run
-          hotter than the rest of the song.
+          Raise it if short notes are missing. Lower it if extra notes appear. Set per take.
         </p>
 
         <h3>Fine tuning</h3>
@@ -624,7 +606,7 @@ function DetectTab() {
             max={-15}
             step={1}
             unit="dB"
-            hint="Raise it if room noise turns into stray notes; lower it if quiet singing gets dropped."
+            hint="Raise to remove stray notes from room noise. Lower if quiet singing is dropped."
             onChange={(v) => store().setTranscribeSetting('noiseFloorDb', v)}
           />
           <Slider
@@ -634,7 +616,7 @@ function DetectTab() {
             max={0.95}
             step={0.01}
             unit=""
-            hint="Higher only keeps clearly pitched sound. Lower it for breathy or nasal humming."
+            hint="Higher keeps only clearly pitched sound. Lower for breathy or nasal input."
             onChange={(v) => store().setTranscribeSetting('clarity', v)}
           />
           <Slider
@@ -644,7 +626,7 @@ function DetectTab() {
             max={300}
             step={5}
             unit="ms"
-            hint="Anything briefer is thrown away. Raise it to kill blips between notes."
+            hint="Notes shorter than this are discarded."
             onChange={(v) => store().setTranscribeSetting('minNoteMs', v)}
           />
           <Slider
@@ -654,7 +636,7 @@ function DetectTab() {
             max={200}
             step={5}
             unit="¢"
-            hint="How far the pitch must move before it counts as a new note. Lower it to catch trills and grace notes; raise it if wide vibrato is being split into extra notes."
+            hint="Pitch change required to start a new note. Lower to catch trills. Raise if vibrato splits into extra notes."
             onChange={(v) => store().setTranscribeSetting('splitCents', v)}
           />
           <Slider
@@ -664,31 +646,24 @@ function DetectTab() {
             max={1}
             step={0.01}
             unit=""
-            hint="Splits repeated notes on the same pitch. Raise it for fast rhythms, lower it if you get doubles."
+            hint="Splits repeated notes on the same pitch. Raise for fast rhythms. Lower if notes double."
             onChange={(v) => store().setTranscribeSetting('onsetSensitivity', v)}
           />
         </div>
         <p className="hint small">
           At {project.bpm} bpm a 1/8 note lasts {Math.round((60 / project.bpm / 2) * 1000)} ms and a 1/16
-          lasts {Math.round((60 / project.bpm / 4) * 1000)} ms. Keep <strong>Shortest note</strong> well under
-          the fastest thing you mean to sing
+          lasts {Math.round((60 / project.bpm / 4) * 1000)} ms. Keep <strong>Shortest note</strong> below the
+          fastest note intended.
           {settings.minNoteMs > (60 / project.bpm / 4) * 1000 * 0.7 && (
-            <>, and right now it is high enough to swallow sixteenths at this tempo</>
+            <> The current value will remove sixteenths at this tempo.</>
           )}
-          .
-        </p>
-        <p className="hint small">
-          Trills and vibrato are the same size to a pitch tracker, so they are told apart by how long the pitch
-          holds rather than how far it moves. If ornaments go missing, lower <strong>New-note sensitivity</strong>;
-          if a very wide vibrato is breaking into extra notes, raise it.
         </p>
       </div>
 
       <div className="col narrow">
         <h3>Re-detect</h3>
         <p className="hint">
-          The take’s audio is kept for this session, so you can change the settings above and detect the notes
-          again without singing it twice.
+          Take audio is kept for this session. Change settings and re-detect without re-recording.
         </p>
         <button
           className={region ? 'ghost primary' : 'ghost'}
@@ -705,9 +680,7 @@ function DetectTab() {
             : 'Re-detect selected range'}
         </button>
         <p className="hint small">
-          Drag across the ruler above the piano roll to pick a range, then set Detail for that passage and
-          press this. Only notes starting inside the range are touched, so the rest of the take is left exactly
-          as it is.
+          Drag across the ruler to select a range. Only notes starting inside it are re-detected.
         </p>
 
         <button
@@ -722,7 +695,7 @@ function DetectTab() {
         >
           {take ? `Re-detect all of “${take.name}”` : 'No take selected'}
         </button>
-        {take && !canRedo && <p className="error">Audio for this take is gone (it isn’t saved across reloads).</p>}
+        {take && !canRedo && <p className="error">Audio for this take is no longer available. Takes are not kept across reloads.</p>}
 
         <button
           className="ghost"
@@ -738,14 +711,10 @@ function DetectTab() {
               `${safeFilename(project.name)}-${safeFilename(take.name)}-raw.wav`,
             );
           }}
-          title="Save exactly what the microphone heard, before any note detection"
+          title="Save the unprocessed recording, before note detection"
         >
           Save raw take audio (.wav)
         </button>
-        <p className="hint small">
-          Your unprocessed vocal, before any note detection. Useful for keeping a good take, and if detection
-          gets something wrong, this is the file that shows why.
-        </p>
 
         <label className="check">
           <input
@@ -756,8 +725,7 @@ function DetectTab() {
           Show the sung pitch line
         </label>
         <p className="hint small">
-          The gold line is your actual pitch. If a note block sits above or below it, the detector rounded to a
-          different semitone than you meant.
+          The gold line is the sung pitch. A note above or below it was rounded to a different semitone.
         </p>
       </div>
     </div>
@@ -778,169 +746,5 @@ function Slider({
         {step < 1 ? value.toFixed(2) : value} {unit}
       </span>
     </label>
-  );
-}
-
-// ----------------------------------------------------------------- Notes ----
-
-function NotesTab() {
-  const selectedNoteIds = useStore((s) => s.selectedNoteIds);
-  const project = useStore((s) => s.project);
-  const activeTrackId = useStore((s) => s.activeTrackId);
-  const gridIndex = useStore((s) => s.gridIndex);
-  const store = useStore.getState;
-
-  const track = project.tracks.find((t) => t.id === activeTrackId);
-  const selected = useMemo(() => {
-    const ids = new Set(selectedNoteIds);
-    const out = [];
-    for (const t of project.tracks) for (const n of t.notes) if (ids.has(n.id)) out.push({ track: t, note: n });
-    return out;
-  }, [selectedNoteIds, project]);
-
-  const avgVel = selected.length
-    ? selected.reduce((a, s) => a + s.note.velocity, 0) / selected.length
-    : 0.8;
-  const avgDetune = selected.length
-    ? selected.reduce((a, s) => a + s.note.detune, 0) / selected.length
-    : 0;
-
-  const after = () => engine.scheduleProject(useStore.getState().project);
-
-  return (
-    <div className="pane">
-      <div className="col">
-        <h3>{selected.length ? `${selected.length} note${selected.length === 1 ? '' : 's'} selected` : 'No selection'}</h3>
-        <div className="row wrap">
-          <button className="ghost" onClick={() => { store().quantizeSelection({ starts: true, lengths: false }); after(); }}>
-            Snap starts to {GRIDS[gridIndex].label}
-          </button>
-          <button className="ghost" onClick={() => { store().quantizeSelection({ starts: true, lengths: true }); after(); }}>
-            Snap starts + lengths
-          </button>
-          <button className="ghost" onClick={() => { store().legatoSelection(); after(); }} title="Stretch each note to the start of the next">
-            Close the gaps
-          </button>
-          <button
-            className="ghost"
-            onClick={() => { store().scaleSelectionTiming(0.8); after(); }}
-            disabled={selected.length === 0}
-            title="Squeeze the selection into three quarters of the time it takes now, keeping the first note where it is. The lengths and the gaps shrink together, so the phrase keeps its shape."
-          >
-            Speed up 25%
-          </button>
-          <button className="ghost" onClick={() => { store().tuneSelectionToScale(); after(); }} disabled={!!track?.isDrum}>
-            Force into key
-          </button>
-          <button className="ghost" onClick={() => { store().flattenSelectionTuning(); after(); }} disabled={selected.length === 0}>
-            Remove tuning drift
-          </button>
-          <button
-            className="ghost"
-            onClick={() => { store().mergeSelectedNotes(); after(); }}
-            disabled={selected.length < 2}
-            title="Join the selected notes into one, spanning all of them, at the pitch of the longest (J)"
-          >
-            Join notes
-          </button>
-          <button
-            className="ghost"
-            onClick={() => { store().chopSelection(); after(); }}
-            disabled={selected.length === 0}
-            title="Slice the selected notes into grid-sized pieces (Ctrl+Alt+C)"
-          >
-            Chop to {GRIDS[gridIndex].label}
-          </button>
-          <button className="ghost" onClick={() => store().duplicateSelection()} disabled={selected.length === 0}>
-            Duplicate
-          </button>
-          <button className="ghost danger" onClick={() => { store().deleteSelected(); after(); }} disabled={selected.length === 0}>
-            Delete
-          </button>
-        </div>
-
-        <div className="row wrap">
-          <button className="ghost sm" onClick={() => { store().nudgeSelection(0, 12); after(); }} disabled={selected.length === 0}>
-            Octave ↑
-          </button>
-          <button className="ghost sm" onClick={() => { store().nudgeSelection(0, -12); after(); }} disabled={selected.length === 0}>
-            Octave ↓
-          </button>
-          <button className="ghost sm" onClick={() => { store().nudgeSelection(0, 1); after(); }} disabled={selected.length === 0}>
-            Semitone ↑
-          </button>
-          <button className="ghost sm" onClick={() => { store().nudgeSelection(0, -1); after(); }} disabled={selected.length === 0}>
-            Semitone ↓
-          </button>
-          <button className="ghost sm" onClick={() => store().selectAllOnTrack(activeTrackId)}>
-            Select whole track
-          </button>
-        </div>
-      </div>
-
-      <div className="col narrow">
-        <h3>Selected</h3>
-        {selected.length === 0 && <p className="hint">Drag a box in the piano roll, or click a note.</p>}
-        {selected.length > 0 && (
-          <>
-            <label className="field">
-              <span>Loudness</span>
-              <input
-                type="range"
-                min={0.05}
-                max={1}
-                step={0.01}
-                value={avgVel}
-                onChange={(e) => { store().setSelectionVelocity(Number(e.target.value)); after(); }}
-              />
-              <span className="unit">{Math.round(avgVel * 100)}</span>
-            </label>
-            <p className="meta">
-              {selected.length === 1
-                ? `${
-                    selected[0].track.isDrum
-                      ? drumLaneName(selected[0].note.midi)
-                      : midiToName(
-                          selected[0].track.snapToScale
-                            ? snapToScale(selected[0].note.midi, project.keyRoot, project.scale)
-                            : selected[0].note.midi,
-                        )
-                  } · ${selected[0].note.duration.toFixed(2)} beats`
-                : `pitches ${midiToName(Math.min(...selected.map((s) => s.note.midi)))} to ${midiToName(
-                    Math.max(...selected.map((s) => s.note.midi)),
-                  )}`}
-            </p>
-            {!track?.isDrum && (
-              <p className="meta">
-                Tuning drift {avgDetune > 0 ? '+' : ''}
-                {avgDetune.toFixed(0)} cents {Math.abs(avgDetune) > 25 ? (avgDetune > 0 ? '(sharp)' : '(flat)') : ''}
-              </p>
-            )}
-          </>
-        )}
-        <div className="shortcuts">
-          <h4>Shortcuts</h4>
-          <ul>
-            <li><kbd>Space</kbd> play / pause · <kbd>Home</kbd>/<kbd>End</kbd> jump</li>
-            <li><kbd>R</kbd> record</li>
-            <li><kbd>↑</kbd><kbd>↓</kbd> transpose · <kbd>Shift</kbd> octave</li>
-            <li><kbd>←</kbd><kbd>→</kbd> move by grid · <kbd>Shift</kbd> bar</li>
-            <li><kbd>D</kbd> draw tool: click places notes</li>
-            <li>right-click or right-drag to erase</li>
-            <li><kbd>Alt</kbd>+drag draw a note (select tool)</li>
-            <li>hold <kbd>Alt</kbd> while dragging to ignore snap</li>
-            <li>hold <kbd>Shift</kbd> while dragging to lock one axis</li>
-            <li>drag a note's right edge to extend</li>
-            <li>click the keyboard on the left to audition</li>
-            <li><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>X</kbd>/<kbd>D</kbd> · <kbd>V</kbd> pastes after the selection</li>
-            <li><kbd>Alt</kbd>+wheel: loudness of selection</li>
-            <li><kbd>Ctrl</kbd>+wheel over the notes zooms the keyboard and notes</li>
-            <li><kbd>Q</kbd> quantise · <kbd>L</kbd> gaps · <kbd>J</kbd> join · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> chop</li>
-            <li>click the ruler to play from there</li>
-            <li>drag the ruler to highlight a section, then press Loop</li>
-          </ul>
-        </div>
-      </div>
-    </div>
   );
 }

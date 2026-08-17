@@ -117,7 +117,7 @@ export function useRecording() {
         setPhase((p) => (p === 'countIn' ? 'recording' : p));
       }, preRollSec * 1000);
     }
-    store.setStatus('Recording. Play your keyboard.');
+    store.setStatus('Recording MIDI input.');
   }, []);
 
   const stopMidi = useCallback(() => {
@@ -164,7 +164,7 @@ export function useRecording() {
   const start = useCallback(async () => {
     const store = useStore.getState();
     if (!store.activeTrackId) {
-      store.setStatus('Add a track first, so the recording has somewhere to land.');
+      store.setStatus('Add a track first.');
       return;
     }
 
@@ -208,7 +208,7 @@ export function useRecording() {
         setPhase((p) => (p === 'countIn' ? 'recording' : p));
       }, preRollSec * 1000);
     }
-    store.setStatus('Recording. Sing it.');
+    store.setStatus('Recording.');
   }, [ensureMic, startMidi]);
 
   const stop = useCallback(async () => {
@@ -259,7 +259,7 @@ export function useRecording() {
 
     if (transcription.notes.length === 0) {
       setPhase('idle');
-      store.setStatus('No notes detected. Try singing louder, or lower the noise gate in Detection.');
+      store.setStatus('No notes detected. Sing louder, or lower the noise gate in Detection.');
       return;
     }
 
@@ -283,9 +283,9 @@ export function useRecording() {
     store.setStatus(
       `${transcription.notes.length} notes in ${elapsed} ms` +
         (Math.abs(transcription.tuningOffsetCents) > 12
-          ? `. You sang ${transcription.tuningOffsetCents > 0 ? 'sharp' : 'flat'} by ${Math.abs(
-              Math.round(transcription.tuningOffsetCents),
-            )} cents overall`
+          ? `. Overall tuning ${Math.abs(Math.round(transcription.tuningOffsetCents))} cents ${
+              transcription.tuningOffsetCents > 0 ? 'sharp' : 'flat'
+            }`
           : '') +
         (fellBack ? ' (classic detector, the neural model could not load)' : ''),
     );

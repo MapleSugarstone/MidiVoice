@@ -112,6 +112,7 @@ export interface AppState {
   latencyOffsetMs: number;
   countInBars: number;
   metronome: boolean;
+  metronomeVolume: number;
   masterVolume: number;
   reverbAmount: number;
   inputMode: InputMode;
@@ -160,7 +161,6 @@ export interface AppState {
   updateNotes: (ids: string[], patch: (n: Note) => Partial<Note>, history?: boolean) => void;
   nudgeSelection: (deltaBeats: number, deltaSemis: number, history?: boolean) => void;
   resizeSelection: (deltaBeats: number, history?: boolean) => void;
-  setSelectionVelocity: (v: number) => void;
   quantizeSelection: (opts: { starts: boolean; lengths: boolean }) => void;
   legatoSelection: () => void;
   /** Squeeze (or stretch) the selection in time, about its first note. */
@@ -255,6 +255,7 @@ export const useStore = create<AppState>((set, get) => ({
   latencyOffsetMs: 0,
   countInBars: 1,
   metronome: true,
+  metronomeVolume: 0.7,
   masterVolume: 0.9,
   reverbAmount: 0.3,
   inputMode: 'melody',
@@ -521,14 +522,6 @@ export const useStore = create<AppState>((set, get) => ({
         note.duration = Math.max(1 / 64, note.duration + deltaBeats);
       }
     }, history);
-  },
-
-  setSelectionVelocity: (v) => {
-    const ids = get().selectedNoteIds;
-    if (ids.length === 0) return;
-    get().transact((p) => {
-      for (const { note } of findNotes(p, ids)) note.velocity = Math.max(0.05, Math.min(1, v));
-    });
   },
 
   quantizeSelection: ({ starts, lengths }) => {

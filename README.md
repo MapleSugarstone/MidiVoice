@@ -44,6 +44,8 @@ gh repo create midivoice --public --source=. --push
 Then in the repo settings, open Pages and set the source to GitHub Actions. The
 included workflow (`.github/workflows/deploy.yml`) builds and publishes on
 every push to `main`. Your app lands at `https://<you>.github.io/midivoice/`.
+The path matches the repo name's exact casing, so a repo named `MidiVoice`
+serves at `/MidiVoice/`, not `/midivoice/`.
 
 Anyone who opens that URL gets their own private workspace. Projects autosave
 to their browser's local storage, not to your repo.
@@ -136,7 +138,10 @@ settings and **Re-detect** rather than singing it again.
 ## Export
 
 - **MIDI**: standard `.mid` with General MIDI programs, opens in any DAW.
-- **Save**: the full project as JSON, including takes and tuning.
+- **Save** (<kbd>Ctrl</kbd>+<kbd>S</kbd>): the full project as a `.fish` file.
+  It is a plain ZIP holding `project.json` and every take's recording as a WAV,
+  so a reopened project can still be re-detected, and renaming the file to
+  `.zip` hands back the raw audio. Older `.midivoice.json` saves still open.
 - **WAV**: offline bounce of the arrangement. Slower than real time on long
   songs, and the button shows progress.
 - **Save raw take audio** (Detection tab): the unprocessed vocal exactly as the
@@ -232,7 +237,7 @@ ornamented bars hot and leave the rest calm.
 ## Joining notes
 
 Select two or more notes and press <kbd>J</kbd>, or **Join notes** in the
-Notes tab. They become one note spanning all of them, at the pitch of the
+Effects menu. They become one note spanning all of them, at the pitch of the
 longest, which is the one the ear already hears as the note. This is the fix
 when a held note comes back split into pieces.
 

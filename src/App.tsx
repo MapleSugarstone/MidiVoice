@@ -9,6 +9,7 @@ import { engine } from './audio/engine';
 import { currentSnapBeats } from './model/store';
 import { GRIDS } from './model/music';
 import { togglePlay } from './ui/transport';
+import { exportFishFile, safeFilename } from './model/midiIO';
 
 const AUTOSAVE_KEY = 'midivoice.autosave.v1';
 
@@ -74,6 +75,7 @@ export default function App() {
       engine.setMasterVolume(s.masterVolume);
       engine.setReverbAmount(s.reverbAmount);
       engine.metronomeEnabled = s.metronome;
+      engine.setMetronomeVolume(s.metronomeVolume);
       engine.setBpm(s.project.bpm);
       engine.setBeatsPerBar(s.project.beatsPerBar);
       engine.syncTracks(s.project.tracks);
@@ -158,6 +160,12 @@ export default function App() {
           case 'a':
             e.preventDefault();
             s.selectAllOnTrack(s.activeTrackId);
+            return;
+          case 's':
+            e.preventDefault();
+            void exportFishFile(s.project).then(() =>
+              s.setStatus(`Saved ${safeFilename(s.project.name)}.fish`),
+            );
             return;
           default:
             return;

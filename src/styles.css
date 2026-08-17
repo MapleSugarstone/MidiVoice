@@ -76,8 +76,9 @@ select {
 }
 
 .logo {
-  color: var(--rec);
-  font-size: 18px;
+  display: block;
+  height: 26px;
+  width: auto;
 }
 
 .songname {
@@ -513,12 +514,31 @@ button:disabled {
 /* ---------------------------------------------------------- piano roll --- */
 
 .pianoroll {
+  position: relative;
   display: grid;
   grid-template-columns: 68px minmax(0, 1fr);
   grid-template-rows: 30px minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
   background: #d3e8f7;
+}
+
+/* The keys and note grid sit recessed behind the surrounding chrome: the
+   ruler, the bottom panel, and the track list each cast a shadow onto them.
+   The top offset matches the 30px ruler row above. */
+.pianoroll::after {
+  content: '';
+  position: absolute;
+  top: 30px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow:
+    inset 0 14px 18px -12px rgba(20, 70, 110, 0.4),
+    inset 0 -14px 18px -12px rgba(20, 70, 110, 0.42),
+    inset 16px 0 18px -14px rgba(20, 70, 110, 0.32);
 }
 
 .pr-corner {
@@ -871,29 +891,110 @@ button:disabled {
   font-size: 11px;
 }
 
-.shortcuts {
-  margin-top: 6px;
-  border-top: 1px solid var(--line);
-  padding-top: 8px;
+/* -------------------------------------------------------- dropdown menus - */
+
+.menuwrap {
+  position: relative;
 }
 
-.shortcuts h4 {
-  margin: 0 0 5px;
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 252px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.82);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(231, 244, 253, 0.75));
+  backdrop-filter: blur(9px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 28px rgba(30, 90, 140, 0.28);
+}
+
+.menu.right {
+  left: auto;
+  right: 0;
+}
+
+.menu-summary {
+  padding: 2px 8px 6px;
+  margin-bottom: 3px;
   font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid rgba(173, 198, 215, 0.6);
+  white-space: nowrap;
+}
+
+.menu-label {
+  padding: 7px 8px 2px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   color: var(--muted);
 }
 
-.shortcuts ul {
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  text-align: left;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.menu-item:hover:not(:disabled) {
+  background: rgba(0, 102, 134, 0.12);
+  border: none;
+}
+
+.menu-item:disabled {
+  opacity: 0.4;
+}
+
+.menu-item.danger:hover:not(:disabled) {
+  background: rgba(198, 68, 98, 0.14);
+  color: #441825;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+}
+
+.menu-row-label {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.shortcuts-menu {
+  min-width: 320px;
+}
+
+.menu-keys {
   margin: 0;
-  padding-left: 0;
+  padding: 2px 8px 4px;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   font-size: 11px;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 kbd {
@@ -925,8 +1026,9 @@ kbd {
 }
 
 .rec-badge.countIn {
-  background: #613200;
-  box-shadow: 0 6px 22px rgba(97, 50, 0, 0.3);
+  background: var(--accent);
+  color: #edf9ff;
+  box-shadow: 0 6px 22px rgba(0, 102, 134, 0.35);
 }
 
 .gesture-hint {
@@ -1137,6 +1239,12 @@ button {
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1) 45%, rgba(120, 0, 30, 0.15));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 6px 22px rgba(198, 68, 98, 0.4);
   text-shadow: 0 1px 2px rgba(80, 0, 20, 0.35);
+}
+
+.rec-badge.countIn {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1) 45%, rgba(0, 60, 85, 0.2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 6px 22px rgba(0, 102, 134, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 45, 62, 0.4);
 }
 
 .gesture-hint {

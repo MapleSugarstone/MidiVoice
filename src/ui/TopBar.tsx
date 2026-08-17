@@ -4,14 +4,16 @@ import { engine } from '../audio/engine';
 import { GRIDS, NOTE_NAMES, SCALES, formatBarBeat } from '../model/music';
 import {
   exportMidiFile,
-  exportProjectFile,
+  exportFishFile,
   midiToProject,
   parseProjectFile,
+  parseFishFile,
   downloadBlob,
   safeFilename,
 } from '../model/midiIO';
 import { renderProject } from '../audio/render';
 import { stopAll, togglePlay } from './transport';
+import { EffectsMenu, ShortcutsMenu } from './EffectsMenu';
 import type { ScaleId } from '../model/types';
 import type { RecordPhase } from './useRecording';
 
@@ -32,6 +34,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
   const gridIndex = useStore((s) => s.gridIndex);
   const tool = useStore((s) => s.tool);
   const metronome = useStore((s) => s.metronome);
+  const metronomeVolume = useStore((s) => s.metronomeVolume);
   const masterVolume = useStore((s) => s.masterVolume);
   const reverbAmount = useStore((s) => s.reverbAmount);
   const past = useStore((s) => s.past.length);
@@ -51,7 +54,9 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      if (file.name.endsWith('.json')) {
+      if (file.name.endsWith('.fish')) {
+        store().loadProject(await parseFishFile(await file.arrayBuffer()));
+      } else if (file.name.endsWith('.json')) {
         store().loadProject(parseProjectFile(await file.text()));
       } else {
         store().loadProject(midiToProject(await file.arrayBuffer(), file.name.replace(/\.midi?$/i, '')));
@@ -80,7 +85,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
     <header className="topbar">
       <div className="topbar-row">
       <div className="brand">
-        <span className="logo">◉</span>
+        <img className="logo" src={`${import.meta.env.BASE_URL}logo-fish.svg`} alt="MidiVoice" />
         <input
           className="songname"
           value={project.name}
@@ -96,19 +101,26 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         <button className="ghost" onClick={() => store().redo()} disabled={future === 0} title="Redo (Ctrl+Shift+Z)">
           ↷
         </button>
-        <button className="ghost" onClick={() => fileRef.current?.click()} title="Open a .mid or .midivoice.json file">
+        <button className="ghost" onClick={() => fileRef.current?.click()} title="Open a .fish, .mid, or .json file">
           Open
         </button>
         <button className="ghost" onClick={() => exportMidiFile(project)} title="Export a standard MIDI file">
           MIDI
         </button>
-        <button className="ghost" onClick={() => exportProjectFile(project)} title="Save the full project">
+        <button
+          className="ghost"
+          onClick={() => {
+            void exportFishFile(project).then(() => store().setStatus(`Saved ${safeFilename(project.name)}.fish`));
+          }}
+          title="Save the full project with take audio (.fish, Ctrl+S)"
+        >
           Save
         </button>
         <button className="ghost" onClick={handleRender} disabled={rendering} title="Bounce the song to a .wav">
           {rendering ? '…' : 'WAV'}
         </button>
-        <input ref={fileRef} type="file" accept=".mid,.midi,.json" hidden onChange={handleImport} />
+        <ShortcutsMenu />
+        <input ref={fileRef} type="file" accept=".mid,.midi,.json,.fish" hidden onChange={handleImport} />
       </div>
       </div>
 
@@ -242,6 +254,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
             ))}
           </select>
         </label>
+        <EffectsMenu />
         <button
           className={`toggle ${metronome ? 'on' : ''}`}
           onClick={() => {
@@ -259,7 +272,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
             store().toggleLoop();
             engine.setProjectLoop(store().project);
           }}
-          title="Loop the highlighted section. Drag across the ruler to choose it; with nothing highlighted this loops the whole song."
+          title="Loop the highlighted ruler section, or the whole song if none is highlighted"
         >
           ⟳ Loop
         </button>
@@ -272,7 +285,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
       </div>
 
       <div className="group">
-        <label className="field slider">
+        <label className="field slider" title="Master volume">
           <span>Vol</span>
           <input
             type="range"
@@ -287,8 +300,8 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
             }}
           />
         </label>
-        <label className="field slider">
-          <span>Room</span>
+        <label className="field slider" title="Reverb amount">
+          <span>Reverb</span>
           <input
             type="range"
             min={0}
@@ -299,6 +312,21 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
               const v = Number(e.target.value);
               store().setSetting('reverbAmount', v);
               engine.setReverbAmount(v);
+            }}
+          />
+        </label>
+        <label className="field slider" title="Metronome volume">
+          <span>Click</span>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={metronomeVolume}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              store().setSetting('metronomeVolume', v);
+              engine.setMetronomeVolume(v);
             }}
           />
         </label>
