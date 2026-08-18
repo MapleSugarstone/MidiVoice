@@ -6,6 +6,7 @@ import {
   exportMidiFile,
   exportFishFile,
   midiToProject,
+  midiToTracks,
   parseProjectFile,
   parseFishFile,
   downloadBlob,
@@ -64,6 +65,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
   const future = useStore((s) => s.future.length);
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const midiRef = useRef<HTMLInputElement>(null);
   const [rendering, setRendering] = useState(false);
   const [playing, setPlaying] = useState(false);
 
@@ -84,6 +86,24 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
       } else {
         store().loadProject(midiToProject(await file.arrayBuffer(), file.name.replace(/\.midi?$/i, '')));
       }
+    } catch (err) {
+      store().setStatus(`Import failed: ${(err as Error).message}`);
+    }
+    e.target.value = '';
+  }
+
+  async function handleImportMidi(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const tracks = midiToTracks(await file.arrayBuffer(), store().project.tracks.length);
+      if (tracks.length === 0) throw new Error('No notes in that file');
+      store().importTracks(tracks);
+      store().setStatus(
+        tracks.length === 1
+          ? `Added "${tracks[0].name}" from ${file.name}`
+          : `Added ${tracks.length} tracks from ${file.name}`,
+      );
     } catch (err) {
       store().setStatus(`Import failed: ${(err as Error).message}`);
     }
@@ -137,6 +157,9 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         <button className="ghost m-hide" onClick={() => fileRef.current?.click()} title="Open a .fish, .mid, or .json file">
           Open
         </button>
+        <button className="ghost m-hide" onClick={() => midiRef.current?.click()} title="Add tracks from a MIDI file to the song">
+          Import
+        </button>
         <button className="ghost m-hide" onClick={() => exportMidiFile(project)} title="Export a standard MIDI file">
           MIDI
         </button>
@@ -156,6 +179,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
         <FileMenu
           rendering={rendering}
           onOpen={() => fileRef.current?.click()}
+          onImport={() => midiRef.current?.click()}
           onSave={() => {
             void exportFishFile(project).then(() => store().setStatus(`Saved ${safeFilename(project.name)}.fish`));
           }}
@@ -163,6 +187,7 @@ export function TopBar({ phase, onToggleRecord, position }: Props) {
           onWav={() => void handleRender()}
         />
         <input ref={fileRef} type="file" accept=".mid,.midi,.json,.fish" hidden onChange={handleImport} />
+        <input ref={midiRef} type="file" accept=".mid,.midi" hidden onChange={handleImportMidi} />
       </div>
       </div>
 
@@ -468,9 +493,9 @@ export function NumberField({
 
 /** Phone-only stand-in for the file button row (see the m-only/m-hide pair in styles.css). */
 function FileMenu({
-  rendering, onOpen, onSave, onMidi, onWav,
+  rendering, onOpen, onImport, onSave, onMidi, onWav,
 }: {
-  rendering: boolean; onOpen: () => void; onSave: () => void; onMidi: () => void; onWav: () => void;
+  rendering: boolean; onOpen: () => void; onImport: () => void; onSave: () => void; onMidi: () => void; onWav: () => void;
 }) {
   const { open, setOpen, ref } = useDropdown();
   const run = (fn: () => void) => {
@@ -485,6 +510,7 @@ function FileMenu({
       {open && (
         <div className="menu right" role="menu">
           <Item label="Open…" onClick={() => run(onOpen)} />
+          <Item label="Import MIDI…" onClick={() => run(onImport)} />
           <Item label="Save project (.fish)" onClick={() => run(onSave)} />
           <Item label="Export MIDI (.mid)" onClick={() => run(onMidi)} />
           <Item label={rendering ? 'Exporting…' : 'Export audio (.wav)'} disabled={rendering} onClick={() => run(onWav)} />

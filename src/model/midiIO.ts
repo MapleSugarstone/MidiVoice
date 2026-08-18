@@ -97,19 +97,11 @@ export function projectToMidi(project: Project): Uint8Array {
   return midi.toArray();
 }
 
-export function midiToProject(data: ArrayBuffer, fallbackName = 'Imported'): Project {
-  const midi = new Midi(data);
-  const project = makeProject();
-  project.tracks = [];
-  project.takes = [];
-  project.name = midi.header.name || fallbackName;
-
-  const bpm = midi.header.tempos[0]?.bpm ?? 120;
-  project.bpm = Math.round(bpm * 100) / 100;
-  const ts = midi.header.timeSignatures[0]?.timeSignature;
-  if (ts && ts[0]) project.beatsPerBar = ts[0];
-
-  let index = 0;
+/** Build MidiVoice tracks from a parsed MIDI file; startIndex drives naming and hue. */
+function tracksFromMidi(midi: Midi, startIndex: number): Track[] {
+  const bpm = Math.round((midi.header.tempos[0]?.bpm ?? 120) * 100) / 100;
+  const tracks: Track[] = [];
+  let index = startIndex;
   for (const t of midi.tracks) {
     if (t.notes.length === 0) continue;
     const isDrum = t.channel === 9;
@@ -120,16 +112,35 @@ export function midiToProject(data: ArrayBuffer, fallbackName = 'Imported'): Pro
     });
     track.notes = t.notes.map((n) => ({
       id: newId(),
-      start: secondsToBeats(n.time, project.bpm),
-      duration: Math.max(1 / 32, secondsToBeats(n.duration, project.bpm)),
+      start: secondsToBeats(n.time, bpm),
+      duration: Math.max(1 / 32, secondsToBeats(n.duration, bpm)),
       midi: n.midi,
       velocity: n.velocity,
       detune: 0,
     }));
-    project.tracks.push(track);
+    tracks.push(track);
     index++;
   }
+  return tracks;
+}
 
+/** Tracks from a MIDI file, in the file's own beat grid, for adding to an existing song. */
+export function midiToTracks(data: ArrayBuffer, startIndex = 0): Track[] {
+  return tracksFromMidi(new Midi(data), startIndex);
+}
+
+export function midiToProject(data: ArrayBuffer, fallbackName = 'Imported'): Project {
+  const midi = new Midi(data);
+  const project = makeProject();
+  project.takes = [];
+  project.name = midi.header.name || fallbackName;
+
+  const bpm = midi.header.tempos[0]?.bpm ?? 120;
+  project.bpm = Math.round(bpm * 100) / 100;
+  const ts = midi.header.timeSignatures[0]?.timeSignature;
+  if (ts && ts[0]) project.beatsPerBar = ts[0];
+
+  project.tracks = tracksFromMidi(midi, 0);
   if (project.tracks.length === 0) project.tracks.push(makeTrack(0, { name: 'Melody' }));
 
   let maxBeat = 0;

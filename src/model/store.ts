@@ -73,10 +73,15 @@ export function migrateProject(raw: any): Project {
   const beatsPerBar = p.beatsPerBar || 4;
   const legacyStart = typeof loopStart === 'number' ? loopStart * beatsPerBar : 0;
   const legacyEnd = typeof loopEnd === 'number' ? loopEnd * beatsPerBar : 0;
+  const tracks = (p.tracks ?? []).map((t) => ({ ...t, showContour: t.showContour ?? true }));
+  // Recompute the length: grow() used to inflate saved files by 2 bars per edit.
+  let lastBeat = 0;
+  for (const t of tracks) for (const n of t.notes ?? []) lastBeat = Math.max(lastBeat, n.start + n.duration);
   return {
     ...p,
-    tracks: (p.tracks ?? []).map((t) => ({ ...t, showContour: t.showContour ?? true })),
+    tracks,
     takes: (p.takes ?? []).map((t) => ({ ...t, stretch: t.stretch ?? 1 })),
+    bars: Math.max(16, Math.ceil(lastBeat / beatsPerBar) + 2),
     loopEnabled: p.loopEnabled ?? false,
     loopStartBeat: p.loopStartBeat ?? legacyStart,
     loopEndBeat: p.loopEndBeat ?? legacyEnd,
@@ -141,6 +146,8 @@ export interface AppState {
 
   // ---- tracks ----
   addTrack: (partial?: Partial<Track>) => string;
+  /** Append ready-made tracks (e.g. from a MIDI import) and activate the first. */
+  importTracks: (tracks: Track[]) => void;
   removeTrack: (id: string) => void;
   /** Shift a track up (-1) or down (+1) in the list. */
   moveTrack: (id: string, delta: number) => void;
@@ -218,7 +225,7 @@ function cloneProject(p: Project): Project {
 }
 
 function grow(p: Project) {
-  let maxBeat = p.bars * p.beatsPerBar;
+  let maxBeat = 0;
   for (const t of p.tracks) {
     for (const n of t.notes) maxBeat = Math.max(maxBeat, n.start + n.duration);
   }
@@ -377,6 +384,14 @@ export const useStore = create<AppState>((set, get) => ({
     });
     set({ activeTrackId: id });
     return id;
+  },
+
+  importTracks: (tracks) => {
+    if (tracks.length === 0) return;
+    get().transact((p) => {
+      p.tracks.push(...tracks);
+    });
+    set({ activeTrackId: tracks[0].id });
   },
 
   removeTrack: (id) => {
