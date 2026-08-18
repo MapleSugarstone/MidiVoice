@@ -651,7 +651,7 @@ function DetectTab() {
             label="Noise gate"
             value={settings.noiseFloorDb}
             min={-70}
-            max={-15}
+            max={-10}
             step={1}
             unit="dB"
             hint="Raise to remove stray notes from room noise. Lower if quiet singing is dropped."
@@ -661,7 +661,7 @@ function DetectTab() {
             label="Pitch confidence"
             value={settings.clarity}
             min={0.3}
-            max={0.95}
+            max={0.98}
             step={0.01}
             unit=""
             hint="Higher keeps only clearly pitched sound. Lower for breathy or nasal input."
@@ -671,7 +671,7 @@ function DetectTab() {
             label="Shortest note"
             value={settings.minNoteMs}
             min={20}
-            max={300}
+            max={400}
             step={5}
             unit="ms"
             hint="Notes shorter than this are discarded."
@@ -681,7 +681,7 @@ function DetectTab() {
             label="New-note sensitivity"
             value={settings.splitCents}
             min={30}
-            max={200}
+            max={250}
             step={5}
             unit="¢"
             hint="Pitch change required to start a new note. Lower to catch trills. Raise if vibrato splits into extra notes."

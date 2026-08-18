@@ -353,7 +353,17 @@ pub fn create(params: Arc<MidiVoiceParams>, shared: Arc<Shared>) -> Option<Box<d
                         ui.set_width(ui.available_width());
                         heading(ui, "DETECTION");
                         slider_row(ui, setter, &params.gate, "Gate");
+                        slider_row(ui, setter, &params.conf, "Pitch confidence");
                         slider_row(ui, setter, &params.split, "New-note distance");
+                        slider_row(ui, setter, &params.settle, "Note settle");
+                        slider_row(ui, setter, &params.release, "Release");
+                        ui.label(
+                            egui::RichText::new(
+                                "Stray notes: raise Gate, Pitch confidence and Note settle.",
+                            )
+                            .color(MUTED)
+                            .size(11.0),
+                        );
                         ui.add_space(2.0);
 
                         ui.horizontal(|ui| {

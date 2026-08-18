@@ -45,13 +45,21 @@ pub struct MidiVoice {
 
 #[derive(Params)]
 pub struct MidiVoiceParams {
-    #[persist = "editor-state"]
+    // The key is versioned: the old key would restore a 550px window that
+    // clips the sliders added since.
+    #[persist = "editor-state-2"]
     pub editor_state: Arc<EguiState>,
 
     #[id = "gate"]
     pub gate: FloatParam,
     #[id = "split"]
     pub split: FloatParam,
+    #[id = "conf"]
+    pub conf: FloatParam,
+    #[id = "settle"]
+    pub settle: FloatParam,
+    #[id = "rel"]
+    pub release: FloatParam,
     #[id = "bass"]
     pub bass: BoolParam,
     #[id = "octave"]
@@ -83,13 +91,13 @@ impl Default for MidiVoice {
 impl Default for MidiVoiceParams {
     fn default() -> Self {
         Self {
-            editor_state: EguiState::from_size(460, 550),
+            editor_state: EguiState::from_size(460, 660),
             gate: FloatParam::new(
                 "Gate",
                 -45.0,
                 FloatRange::Linear {
-                    min: -60.0,
-                    max: -25.0,
+                    min: -70.0,
+                    max: -10.0,
                 },
             )
             .with_step_size(1.0)
@@ -98,12 +106,42 @@ impl Default for MidiVoiceParams {
                 "New-note distance",
                 80.0,
                 FloatRange::Linear {
-                    min: 40.0,
-                    max: 150.0,
+                    min: 30.0,
+                    max: 250.0,
                 },
             )
             .with_step_size(5.0)
             .with_unit(" cents"),
+            conf: FloatParam::new(
+                "Pitch confidence",
+                0.5,
+                FloatRange::Linear {
+                    min: 0.3,
+                    max: 0.95,
+                },
+            )
+            .with_step_size(0.01)
+            .with_value_to_string(formatters::v2s_f32_rounded(2)),
+            settle: FloatParam::new(
+                "Note settle",
+                32.0,
+                FloatRange::Linear {
+                    min: 20.0,
+                    max: 90.0,
+                },
+            )
+            .with_step_size(1.0)
+            .with_unit(" ms"),
+            release: FloatParam::new(
+                "Release",
+                53.0,
+                FloatRange::Linear {
+                    min: 20.0,
+                    max: 210.0,
+                },
+            )
+            .with_step_size(1.0)
+            .with_unit(" ms"),
             bass: BoolParam::new("Bass range", false),
             octave: IntParam::new("Octave", 0, IntRange::Linear { min: -2, max: 2 }),
             bend: BoolParam::new("Pitch bend", false),
@@ -215,6 +253,10 @@ impl Plugin for MidiVoice {
         };
         tracker.gate_db = self.params.gate.value();
         tracker.split_cents = self.params.split.value();
+        tracker.conf = self.params.conf.value();
+        let hop_ms = tracker.hop_ms;
+        tracker.settle_hops = ((self.params.settle.value() / hop_ms).round() as i32).clamp(2, 12) as usize;
+        tracker.release_hops = ((self.params.release.value() / hop_ms).round() as i32).clamp(2, 20) as u32;
 
         let passthrough = self.params.passthrough.value();
         let octave = self.params.octave.value();

@@ -171,8 +171,12 @@ In Reaper, one track does it:
    Record: output (MIDI). Recording now leaves an editable MIDI item instead
    of audio.
 
-The plugin window has Gate, New-note distance, Melody or Bass range, octave
-shift, an optional pitch-bend stream, and an audio passthrough toggle.
+The plugin window has Gate, Pitch confidence, New-note distance, Note settle,
+Release, Melody or Bass range, octave shift, an optional pitch-bend stream,
+and an audio passthrough toggle. In a noisy room, raise Gate, Pitch confidence
+and Note settle until stray notes stop. Note settle is how long a pitch must
+hold steady before it counts as a note, and Release is how much silence ends
+one.
 
 On Windows, download
 [midivoice-plugin-windows.zip](https://maplesugarstone.github.io/MidiVoice/midivoice-plugin-windows.zip)

@@ -235,6 +235,14 @@ pub enum TrackerEvent {
 pub struct Tracker {
     pub gate_db: f32,
     pub split_cents: f32,
+    /// Clarity needed to start a note; holding one needs 0.2 less (floor 0.15).
+    pub conf: f32,
+    /// Voiced hops that must agree before a note starts or moves. 2..=12.
+    pub settle_hops: usize,
+    /// Unvoiced hops before the sounding note releases. 2..=20.
+    pub release_hops: u32,
+    /// Milliseconds per hop at the current sample rate.
+    pub hop_ms: f32,
     yin: Yin,
     frame: Vec<f32>,
     filled: usize,
@@ -246,8 +254,23 @@ pub struct Tracker {
     pub last_midi: f32,
 }
 
-fn median3(a: f32, b: f32, c: f32) -> f32 {
-    a.max(b.min(c)).min(b.max(c))
+fn spread(v: &[f32]) -> f32 {
+    let mut lo = f32::INFINITY;
+    let mut hi = f32::NEG_INFINITY;
+    for &x in v {
+        lo = lo.min(x);
+        hi = hi.max(x);
+    }
+    hi - lo
+}
+
+fn median(v: &[f32]) -> f32 {
+    let mut buf = [0.0f32; 16];
+    let n = v.len().min(16);
+    buf[..n].copy_from_slice(&v[..n]);
+    let s = &mut buf[..n];
+    s.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    s[n / 2]
 }
 
 impl Tracker {
@@ -261,12 +284,16 @@ impl Tracker {
         Self {
             gate_db: -45.0,
             split_cents: 80.0,
+            conf: 0.5,
+            settle_hops: 3,
+            release_hops: 5,
+            hop_ms: HOP as f32 * 1000.0 / rate,
             yin,
             frame: vec![0.0; size],
             filled: 0,
             note: -1,
-            on_buf: Vec::with_capacity(4),
-            drift_buf: Vec::with_capacity(4),
+            on_buf: Vec::with_capacity(16),
+            drift_buf: Vec::with_capacity(16),
             off_run: 0,
             last_db: -120.0,
             last_midi: 0.0,
@@ -310,21 +337,23 @@ impl Tracker {
         self.last_midi = m;
 
         // Hysteresis: starting a note demands more evidence than holding one.
-        let need = if self.note >= 0 { 0.3 } else { 0.5 };
+        let need = if self.note >= 0 {
+            (self.conf - 0.2).max(0.15)
+        } else {
+            self.conf
+        };
         let voiced = db >= self.gate_db && m > 0.0 && clarity >= need;
+        let settle = self.settle_hops.clamp(2, 16);
 
         if voiced {
             if self.note < 0 {
                 self.on_buf.push(m);
-                if self.on_buf.len() > 3 {
+                while self.on_buf.len() > settle {
                     self.on_buf.remove(0);
                 }
-                // Three agreeing frames let the scoop into a note settle first.
-                if self.on_buf.len() == 3 {
-                    let (a, b, c) = (self.on_buf[0], self.on_buf[1], self.on_buf[2]);
-                    if a.max(b).max(c) - a.min(b).min(c) <= 0.8 {
-                        self.start_note(median3(a, b, c), db, events);
-                    }
+                // Agreeing frames let the scoop into a note settle first.
+                if self.on_buf.len() == settle && spread(&self.on_buf) <= 0.8 {
+                    self.start_note(median(&self.on_buf), db, events);
                 }
             } else {
                 let gap = self.off_run;
@@ -336,18 +365,20 @@ impl Tracker {
                     self.start_note(m, db, events);
                 } else if away * 100.0 > self.split_cents {
                     self.drift_buf.push((m, clarity));
-                    if self.drift_buf.len() > 3 {
+                    while self.drift_buf.len() > settle {
                         self.drift_buf.remove(0);
                     }
-                    if self.drift_buf.len() == 3 {
-                        let (a, b, c) =
-                            (self.drift_buf[0].0, self.drift_buf[1].0, self.drift_buf[2].0);
-                        if a.max(b).max(c) - a.min(b).min(c) <= 1.0 {
-                            let target = median3(a, b, c);
-                            let mean_clar = (self.drift_buf[0].1
-                                + self.drift_buf[1].1
-                                + self.drift_buf[2].1)
-                                / 3.0;
+                    if self.drift_buf.len() == settle {
+                        let mut pitches = [0.0f32; 16];
+                        let mut clar_sum = 0.0;
+                        for (i, &(p, c)) in self.drift_buf.iter().enumerate() {
+                            pitches[i] = p;
+                            clar_sum += c;
+                        }
+                        let pitches = &pitches[..settle];
+                        if spread(pitches) <= 1.0 {
+                            let target = median(pitches);
+                            let mean_clar = clar_sum / settle as f32;
                             let jump = (target - self.note as f32).abs();
                             // A soft, clean octave step is usually YIN grabbing
                             // a subharmonic: hold instead.
@@ -367,7 +398,7 @@ impl Tracker {
             self.drift_buf.clear();
             if self.note >= 0 {
                 self.off_run += 1;
-                if self.off_run >= 5 {
+                if self.off_run >= self.release_hops {
                     events.push(TrackerEvent::Off);
                     self.note = -1;
                     self.off_run = 0;
@@ -397,6 +428,15 @@ mod tests {
 
     fn run(rate: f32, bass: bool, tone: impl Fn(usize) -> f32, seconds: f32) -> Vec<String> {
         let mut tracker = Tracker::new(bass, rate);
+        run_tracker(&mut tracker, rate, tone, seconds)
+    }
+
+    fn run_tracker(
+        tracker: &mut Tracker,
+        rate: f32,
+        tone: impl Fn(usize) -> f32,
+        seconds: f32,
+    ) -> Vec<String> {
         let mut events = Vec::new();
         let mut log = Vec::new();
         let mut hop = [0.0f32; HOP];
@@ -454,6 +494,52 @@ mod tests {
             1.0,
         );
         assert_eq!(log, ["on69", "off", "on74", "off"]);
+    }
+
+    #[test]
+    fn longer_settle_skips_a_blip() {
+        let rate = 48000.0f32;
+        let blip = |t: usize| {
+            if t >= 2400 && t < 6600 {
+                (t as f32 * 440.0 / rate * std::f32::consts::TAU).sin() * 0.3
+            } else {
+                0.0
+            }
+        };
+        assert_eq!(run(rate, false, blip, 0.5), ["on69", "off"]);
+        let mut strict = Tracker::new(false, rate);
+        strict.settle_hops = 12;
+        assert_eq!(run_tracker(&mut strict, rate, blip, 0.5), Vec::<String>::new());
+    }
+
+    #[test]
+    fn release_sets_the_note_off_lag() {
+        let rate = 48000.0f32;
+        for (release, want_extra) in [(5u32, 5usize), (12, 12)] {
+            let mut t = Tracker::new(false, rate);
+            t.release_hops = release;
+            let mut events = Vec::new();
+            let mut hop = [0.0f32; HOP];
+            let mut off_at = None;
+            // Tone through hop 19, then silence; the off should land
+            // `release` hops after the last voiced one.
+            for h in 0..60usize {
+                for (i, v) in hop.iter_mut().enumerate() {
+                    let s = h * HOP + i;
+                    *v = if h < 20 {
+                        (s as f32 * 440.0 / rate * std::f32::consts::TAU).sin() * 0.3
+                    } else {
+                        0.0
+                    };
+                }
+                events.clear();
+                t.push_hop(&hop, &mut events);
+                if off_at.is_none() && events.iter().any(|e| matches!(e, TrackerEvent::Off)) {
+                    off_at = Some(h);
+                }
+            }
+            assert_eq!(off_at, Some(19 + want_extra));
+        }
     }
 
     #[test]
