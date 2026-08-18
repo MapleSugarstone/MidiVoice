@@ -91,7 +91,11 @@ export async function renderProject(
       instrument.output.connect(panner);
       instrument.output.connect(send);
 
-      for (const note of track.notes) {
+      // Chronological order: the drum kit's duplicate-hit gate assumes each
+      // voice is triggered at strictly increasing times, as live Tone.Part
+      // playback guarantees. The notes array itself is in edit order.
+      const ordered = [...track.notes].sort((a, b) => a.start - b.start);
+      for (const note of ordered) {
         const freq = midiToFreq(note.midi);
         const time = beatsToSeconds(note.start, project.bpm);
         if (time < 0) continue;
